@@ -1,14 +1,14 @@
 #include "vk2d_renderer_core.h"
 
-#define VK_KHR_win32_surface
-#include <volk.h>
-
-#include <GLFW/glfw3.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <Vk2D/Vk2D_Base/vk2d_log.h>
+
+#include <vulkan/vulkan.h>
+#include <volk.h>
+
+#include <GLFW/glfw3.h>
 
 #if defined(_WIN32)
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -37,7 +37,7 @@ static VkBool32 demo_check_layers(uint32_t check_count, char **check_names,
     for (uint32_t i = 0; i < check_count; i++) {
         VkBool32 found = 0;
         for (uint32_t j = 0; j < layer_count; j++) {
-            if (!strcmp(check_names[i], layers[j].layerName)) {
+            if (strcmp(check_names[i], layers[j].layerName) == 0) {
                 found = 1;
                 break;
             }
@@ -54,9 +54,9 @@ i32 vk2d_init_renderer(vk2d_window* window)
 {
     // INSTANCE
 
-    _data = malloc(sizeof(struct vk2d_renderer_data));
-
     VkResult res = volkInitialize();
+
+    _data = malloc(sizeof(struct vk2d_renderer_data));
 
     _data->enable_extension_count = 0;
     _data->enable_layer_count = 0;
@@ -110,7 +110,17 @@ i32 vk2d_init_renderer(vk2d_window* window)
             vk2d_assert(!res);
 
             for (uint32_t i = 0; i < instance_extension_count; i++) {
-                _data->extension_names[i] = instance_extensions[i].extensionName;
+                if (!strcmp(VK_KHR_SURFACE_EXTENSION_NAME, instance_extensions[i].extensionName)) {
+                    _data->extension_names[_data->enable_extension_count++] = VK_KHR_SURFACE_EXTENSION_NAME;
+                }
+
+                if (!strcmp(VK_KHR_WIN32_SURFACE_EXTENSION_NAME, instance_extensions[i].extensionName)) {
+                    _data->extension_names[_data->enable_extension_count++] = VK_KHR_WIN32_SURFACE_EXTENSION_NAME;
+                }
+
+                if (!strcmp(VK_EXT_DEBUG_REPORT_EXTENSION_NAME, instance_extensions[i].extensionName)) {
+                    _data->extension_names[_data->enable_extension_count++] = VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
+                }
 
                 vk2d_assert(_data->enable_extension_count < 64);
             }
@@ -119,6 +129,7 @@ i32 vk2d_init_renderer(vk2d_window* window)
         }
 
         VkApplicationInfo appInfo;
+        memset(&appInfo, 0, sizeof(VkApplicationInfo));
         appInfo.pNext = NULL;
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         appInfo.pApplicationName = "Vk2d App";
@@ -128,13 +139,14 @@ i32 vk2d_init_renderer(vk2d_window* window)
         appInfo.apiVersion = VK_API_VERSION_1_0;
 
         VkInstanceCreateInfo createInfo;
+        memset(&createInfo, 0, sizeof(VkInstanceCreateInfo));
         createInfo.pNext = NULL;
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &appInfo;
-        createInfo.enabledLayerCount = _data->enable_layer_count;
+        createInfo.enabledLayerCount = 0;
         createInfo.enabledExtensionCount = _data->enable_extension_count;
         createInfo.ppEnabledExtensionNames = (const char *const *)_data->extension_names;
-        createInfo.ppEnabledLayerNames = (const char *const *)_data->enabled_layers;
+        createInfo.ppEnabledLayerNames = NULL;
 
         res = vkCreateInstance(&createInfo, NULL, &_data->instance);
 
@@ -143,7 +155,12 @@ i32 vk2d_init_renderer(vk2d_window* window)
 
     // SURFACE
     {
+        // This is probably the most dumb shit i have ever written, please end my life
+        // Why does this work jesus
         #if defined(_WIN32)
+        PFN_vkCreateWin32SurfaceKHR test = vkGetInstanceProcAddr(_data->instance, "vkCreateWin32SurfaceKHR");
+        vk2d_assert(test != NULL);
+
         VkWin32SurfaceCreateInfoKHR surface_create_info = {
             VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
             NULL,
@@ -152,7 +169,7 @@ i32 vk2d_init_renderer(vk2d_window* window)
             glfwGetWin32Window(window->window_pointer)
         };
 
-        res = vkCreateWin32SurfaceKHR(_data->instance, &surface_create_info, NULL, &_data->surface);
+        res = test(_data->instance, &surface_create_info, NULL, &_data->surface);
         #endif
     }
 
