@@ -13,4 +13,5 @@ CMakeCache.txt
 *.internal
 *.obj
 *.rsp
+.vscode
 Makefile

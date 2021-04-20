@@ -1,0 +1,168 @@
+#include "vk2d_renderer_core.h"
+
+#define VK_KHR_win32_surface
+#include <volk.h>
+
+#include <GLFW/glfw3.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <Vk2D/Vk2D_Base/vk2d_log.h>
+
+#if defined(_WIN32)
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <vulkan/vulkan_win32.h>
+#endif
+#include <GLFW/glfw3native.h>
+
+#define ARRAY_SIZE(arr) sizeof(arr) / sizeof(arr[0])
+
+struct vk2d_renderer_data
+{
+    VkInstance instance;
+    char *extension_names[64];
+    char *enabled_layers[64];
+    u32 enable_extension_count;
+    u32 enable_layer_count;
+
+    VkSurfaceKHR surface;
+};
+
+static struct vk2d_renderer_data* _data;
+
+static VkBool32 demo_check_layers(uint32_t check_count, char **check_names,
+                                  uint32_t layer_count,
+                                  VkLayerProperties *layers) {
+    for (uint32_t i = 0; i < check_count; i++) {
+        VkBool32 found = 0;
+        for (uint32_t j = 0; j < layer_count; j++) {
+            if (!strcmp(check_names[i], layers[j].layerName)) {
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            fprintf(stderr, "Cannot find layer: %s\n", check_names[i]);
+            return 0;
+        }
+    }
+    return 1;
+}
+
+i32 vk2d_init_renderer(vk2d_window* window)
+{
+    // INSTANCE
+
+    _data = malloc(sizeof(struct vk2d_renderer_data));
+
+    VkResult res = volkInitialize();
+
+    _data->enable_extension_count = 0;
+    _data->enable_layer_count = 0;
+
+    {
+        uint32_t instance_extension_count = 0;
+        uint32_t instance_layer_count = 0;
+        uint32_t validation_layer_count = 0;
+        char **instance_validation_layers = NULL;
+
+        char *instance_validation_layers_alt1[] = {
+            "VK_LAYER_KHRONOS_validation"
+        };
+
+        VkBool32 validation_found = 0;
+        res = vkEnumerateInstanceLayerProperties(&instance_layer_count, NULL);
+        vk2d_assert(!res);
+
+        instance_validation_layers = instance_validation_layers_alt1;
+
+        if (instance_layer_count > 0) {
+            VkLayerProperties *instance_layers =
+                    malloc(sizeof (VkLayerProperties) * instance_layer_count);
+            res = vkEnumerateInstanceLayerProperties(&instance_layer_count,
+                    instance_layers);
+            vk2d_assert(!res);
+
+            validation_found = demo_check_layers(
+                    ARRAY_SIZE(instance_validation_layers_alt1),
+                    instance_validation_layers, instance_layer_count,
+                    instance_layers);
+
+            if (validation_found) {
+                _data->enable_layer_count = ARRAY_SIZE(instance_validation_layers);
+                _data->enabled_layers[0] = "VK_LAYER_KHRONOS_validation";
+                validation_layer_count = 1;
+            }
+
+            free(instance_layers);
+        }
+
+        VkBool32 surfaceExtFound = 0;
+        VkBool32 platformSurfaceExtFound = 0;
+        memset(_data->extension_names, 0, sizeof(_data->extension_names));
+        res = vkEnumerateInstanceExtensionProperties(NULL, &instance_extension_count, NULL);
+        vk2d_assert(!res);
+
+        if (instance_extension_count > 0) {
+            VkExtensionProperties *instance_extensions = malloc(sizeof(VkExtensionProperties) * instance_extension_count);
+            res = vkEnumerateInstanceExtensionProperties(NULL, &instance_extension_count, instance_extensions);
+            vk2d_assert(!res);
+
+            for (uint32_t i = 0; i < instance_extension_count; i++) {
+                _data->extension_names[i] = instance_extensions[i].extensionName;
+
+                vk2d_assert(_data->enable_extension_count < 64);
+            }
+
+            free(instance_extensions);
+        }
+
+        VkApplicationInfo appInfo;
+        appInfo.pNext = NULL;
+        appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+        appInfo.pApplicationName = "Vk2d App";
+        appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+        appInfo.pEngineName = "Vk2d";
+        appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+        appInfo.apiVersion = VK_API_VERSION_1_0;
+
+        VkInstanceCreateInfo createInfo;
+        createInfo.pNext = NULL;
+        createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+        createInfo.pApplicationInfo = &appInfo;
+        createInfo.enabledLayerCount = _data->enable_layer_count;
+        createInfo.enabledExtensionCount = _data->enable_extension_count;
+        createInfo.ppEnabledExtensionNames = (const char *const *)_data->extension_names;
+        createInfo.ppEnabledLayerNames = (const char *const *)_data->enabled_layers;
+
+        res = vkCreateInstance(&createInfo, NULL, &_data->instance);
+
+        volkLoadInstance(_data->instance);
+    }
+
+    // SURFACE
+    {
+        #if defined(_WIN32)
+        VkWin32SurfaceCreateInfoKHR surface_create_info = {
+            VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
+            NULL,
+            0,
+            GetModuleHandle(NULL),
+            glfwGetWin32Window(window->window_pointer)
+        };
+
+        res = vkCreateWin32SurfaceKHR(_data->instance, &surface_create_info, NULL, &_data->surface);
+        #endif
+    }
+
+    int is_good = res == VK_SUCCESS;
+    return is_good;
+}
+
+void vk2d_shutdown_renderer()
+{
+    vkDestroySurfaceKHR(_data->instance, _data->surface, NULL);
+    vkDestroyInstance(_data->instance, NULL);
+    free(_data);
+}

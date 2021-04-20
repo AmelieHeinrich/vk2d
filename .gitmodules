@@ -4,3 +4,6 @@
 [submodule "ext/volk"]
 	path = ext/volk
 	url = https://github.com/zeux/volk
+[submodule "ext/vulkan-headers"]
+	path = ext/vulkan-headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers
