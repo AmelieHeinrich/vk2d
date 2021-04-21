@@ -1,4 +1,5 @@
 #include <Vk2D/Vk2d.h>
+#include <stdio.h>
 
 int main()
 {

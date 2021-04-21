@@ -35,6 +35,7 @@ void vk2d_log_info(const char* tag, const char* message)
     time_t now;
     time(&now);
     printf(RESET);
+    printf(BOLDGREEN);
     printf("%s [%s] : %s", ctime(&now), tag, message);
 }
 
@@ -71,4 +72,9 @@ void vk2d_log_fatal(const char* tag, const char* message)
 void vk2d_log_flush()
 {
     fflush(stdout);
+}
+
+void vk2d_log_reset()
+{
+    printf(RESET);
 }

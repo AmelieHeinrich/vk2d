@@ -2,6 +2,7 @@
 
 #include <GLFW/glfw3.h>
 #include <Vk2D/Vk2D_Render/vk2d_renderer_core.h>
+#include <Vk2D/Vk2D_Base/vk2d_log.h>
 
 struct vk2d_initialised_subsystems
 {
@@ -44,4 +45,6 @@ void vk2d_quit()
         glfwTerminate();
         return;
     }
+
+    vk2d_log_reset();
 }

@@ -9,5 +9,6 @@ void vk2d_log_warn(const char* tag, const char* message);
 void vk2d_log_error(const char* tag, const char* message);
 void vk2d_log_fatal(const char* tag, const char* message);
 void vk2d_log_flush();
+void vk2d_log_reset();
 
 #endif
