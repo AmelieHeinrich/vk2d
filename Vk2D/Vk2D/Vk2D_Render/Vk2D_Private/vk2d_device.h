@@ -11,6 +11,7 @@ struct vk2d_device
 {
     VkDevice device;
     VkQueue graphics_queue;
+    VkQueue present_queue;
 };
 
 void vk2d_init_device(vk2d_device* dst, vk2d_instance_data data, VkPhysicalDevice gpu, vk2d_queue_family_indices indices);

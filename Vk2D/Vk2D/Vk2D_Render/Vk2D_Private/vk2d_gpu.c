@@ -13,17 +13,26 @@ vk2d_queue_family_indices vk2d_find_queue_families(VkPhysicalDevice device, VkSu
     u32 queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, NULL);
 
+    vk2d_assert(queueFamilyCount >= 2);
+
     VkQueueFamilyProperties* queueFamilies = malloc(sizeof(VkQueueFamilyProperties) * queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies);
 
-    int j = 0;
-    for (int i = 0; i < ARRAY_SIZE(queueFamilies); i++)
+    i32 j = 0;
+    for (i32 i = 0; i < queueFamilyCount; i++)
     {
         if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
             indices.graphics_family = j;
         }
 
-        if (indices.graphics_family) {
+        VkBool32 presentSupport = 0;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, j, surface, &presentSupport);
+
+        if (presentSupport) {
+            indices.present_family = j;
+        }
+
+        if (indices.graphics_family && indices.present_family) {
             break;
         }
 

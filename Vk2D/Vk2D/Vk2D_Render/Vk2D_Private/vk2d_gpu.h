@@ -10,6 +10,7 @@ typedef struct vk2d_queue_family_indices vk2d_queue_family_indices;
 struct vk2d_queue_family_indices
 {
     u32 graphics_family;
+    u32 present_family;
 };
 
 typedef struct vk2d_gpu vk2d_gpu;
