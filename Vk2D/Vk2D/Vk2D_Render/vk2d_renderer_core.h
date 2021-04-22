@@ -15,7 +15,9 @@ struct vk2d_gpu_info
     u32 pipelineCacheUUID[16];
 };
 
-i32 vk2d_init_renderer(vk2d_window* window);
+i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug);
 void vk2d_shutdown_renderer();
+
+static i32 _debug_enabled;
 
 #endif

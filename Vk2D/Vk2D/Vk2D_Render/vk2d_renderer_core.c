@@ -32,15 +32,17 @@ static VkBool32 demo_check_layers(u32 check_count, char **check_names,
             }
         }
         if (!found) {
-            fprintf(stderr, "Cannot find layer: %s\n", check_names[i]);
+            fprintf(stderr, "Cannot find layer: %s", check_names[i]);
             return 0;
         }
     }
     return 1;
 }
 
-i32 vk2d_init_renderer(vk2d_window* window)
+i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
 {
+    _debug_enabled = enableDebug;
+
     // INSTANCE
 
     VkResult res = volkInitialize();
@@ -144,6 +146,11 @@ i32 vk2d_init_renderer(vk2d_window* window)
         res = vkCreateInstance(&createInfo, NULL, &_data->instance_data.instance);
 
         volkLoadInstance(_data->instance_data.instance);
+
+        if (_debug_enabled)
+        {
+            vk2d_log_info("Vk2D Debug Messenger", "Created instance");
+        }
     }
 
     // SURFACE
@@ -164,13 +171,30 @@ i32 vk2d_init_renderer(vk2d_window* window)
 
         res = test(_data->instance_data.instance, &surface_create_info, NULL, &_data->surface);
         #endif
+
+        if (_debug_enabled)
+        {
+            vk2d_log_info("Vk2D Debug Messenger", "Created window surface");
+        }
     }
 
     _data->physical_device = malloc(sizeof(vk2d_gpu));
     vk2d_init_gpu(_data->physical_device, _data->instance_data.instance, _data->surface);
+
+    if (_debug_enabled)
+    {
+        char dest[50] = "Using GPU with name: ";
+        strcat(dest, _data->physical_device->gpu_props.deviceName);
+        vk2d_log_info("Vk2D Debug Messenger", dest);
+    }
     
     _data->logical_device = malloc(sizeof(vk2d_device));
     vk2d_init_device(_data->logical_device, _data->instance_data, _data->physical_device->gpu, _data->physical_device->indices);
+
+    if (_debug_enabled)
+    {
+        vk2d_log_info("Vk2D Debug Messenger", "Created logical device with 2 queues");
+    }
 
     int is_good = res == VK_SUCCESS;
     return is_good;

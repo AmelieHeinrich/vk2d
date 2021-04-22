@@ -5,6 +5,7 @@
 #include "vk2d_renderer_data.h"
 #include <Vk2D/Vk2D_Base/vk2d_log.h>
 #include <stdio.h>
+#include <Vk2D/Vk2D_Render/vk2d_renderer_core.h>
 
 vk2d_queue_family_indices vk2d_find_queue_families(VkPhysicalDevice device, VkSurfaceKHR surface)
 {
@@ -50,7 +51,7 @@ void vk2d_init_gpu(vk2d_gpu* dst, VkInstance instance, VkSurfaceKHR surface)
     vkEnumeratePhysicalDevices(instance, &deviceCount, NULL);
 
     if (deviceCount == 0) {
-        vk2d_log_fatal("Vk2D", "Failed to find suitable device!\n");
+        vk2d_log_fatal("Vk2D", "Failed to find suitable device!");
     }
 
     VkPhysicalDevice* devices = malloc(sizeof(VkPhysicalDevice) * deviceCount);
@@ -58,16 +59,12 @@ void vk2d_init_gpu(vk2d_gpu* dst, VkInstance instance, VkSurfaceKHR surface)
     dst->gpu = devices[0];
 
     if (dst->gpu == VK_NULL_HANDLE) {
-        vk2d_log_fatal("Vk2D", "Failed to find suitable device!\n");
+        vk2d_log_fatal("Vk2D", "Failed to find suitable device!");
     }
 
     dst->indices = vk2d_find_queue_families(dst->gpu, surface);
     vkGetPhysicalDeviceProperties(dst->gpu, &dst->gpu_props);
     vkGetPhysicalDeviceFeatures(dst->gpu, &dst->gpu_features);
-
-    char dest[50] = "Using GPU with name: ";
-    strcat(dest, dst->gpu_props.deviceName);
-    vk2d_log_info("Vk2D", dest);
 
     free(devices);
 }
