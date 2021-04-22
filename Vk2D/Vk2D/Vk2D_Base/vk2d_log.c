@@ -37,6 +37,7 @@ void vk2d_log_info(const char* tag, const char* message)
     printf(RESET);
     printf(BOLDGREEN);
     printf("%s [%s] : %s", ctime(&now), tag, message);
+    printf(RESET);
 }
 
 void vk2d_log_warn(const char* tag, const char* message)

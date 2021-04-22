@@ -10,7 +10,6 @@ typedef struct vk2d_queue_family_indices vk2d_queue_family_indices;
 struct vk2d_queue_family_indices
 {
     u32 graphics_family;
-    u32 present_family;
 };
 
 typedef struct vk2d_gpu vk2d_gpu;
@@ -22,7 +21,7 @@ struct vk2d_gpu
     VkPhysicalDeviceFeatures gpu_features;
 };
 
-void vk2d_init_gpu(vk2d_gpu dst, VkInstance instance, VkSurfaceKHR surface);
+void vk2d_init_gpu(vk2d_gpu* dst, VkInstance instance, VkSurfaceKHR surface);
 
 vk2d_queue_family_indices vk2d_find_queue_families(VkPhysicalDevice device, VkSurfaceKHR surface);
 

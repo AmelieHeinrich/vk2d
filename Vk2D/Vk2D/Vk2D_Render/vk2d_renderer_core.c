@@ -45,8 +45,10 @@ i32 vk2d_init_renderer(vk2d_window* window)
 
     VkResult res = volkInitialize();
 
-    _data.enable_extension_count = 0;
-    _data.enable_layer_count = 0;
+    _data = malloc(sizeof(vk2d_renderer_data));
+
+    _data->instance_data.enable_extension_count = 0;
+    _data->instance_data.enable_layer_count = 0;
 
     {
         u32 instance_extension_count = 0;
@@ -77,8 +79,8 @@ i32 vk2d_init_renderer(vk2d_window* window)
                     instance_layers);
 
             if (validation_found) {
-                _data.enable_layer_count = ARRAY_SIZE(instance_validation_layers);
-                _data.enabled_layers[0] = "VK_LAYER_KHRONOS_validation";
+                _data->instance_data.enable_layer_count = ARRAY_SIZE(instance_validation_layers);
+                _data->instance_data.enabled_layers[0] = "VK_LAYER_KHRONOS_validation";
                 validation_layer_count = 1;
             }
 
@@ -87,7 +89,7 @@ i32 vk2d_init_renderer(vk2d_window* window)
 
         VkBool32 surfaceExtFound = 0;
         VkBool32 platformSurfaceExtFound = 0;
-        memset(_data.extension_names, 0, sizeof(_data.extension_names));
+        memset(_data->instance_data.extension_names, 0, sizeof(_data->instance_data.extension_names));
         res = vkEnumerateInstanceExtensionProperties(NULL, &instance_extension_count, NULL);
         vk2d_assert(!res);
 
@@ -98,18 +100,22 @@ i32 vk2d_init_renderer(vk2d_window* window)
 
             for (u32 i = 0; i < instance_extension_count; i++) {
                 if (!strcmp(VK_KHR_SURFACE_EXTENSION_NAME, instance_extensions[i].extensionName)) {
-                    _data.extension_names[_data.enable_extension_count++] = VK_KHR_SURFACE_EXTENSION_NAME;
+                    _data->instance_data.extension_names[_data->instance_data.enable_extension_count++] = VK_KHR_SURFACE_EXTENSION_NAME;
                 }
 
                 if (!strcmp(VK_KHR_WIN32_SURFACE_EXTENSION_NAME, instance_extensions[i].extensionName)) {
-                    _data.extension_names[_data.enable_extension_count++] = VK_KHR_WIN32_SURFACE_EXTENSION_NAME;
+                    _data->instance_data.extension_names[_data->instance_data.enable_extension_count++] = VK_KHR_WIN32_SURFACE_EXTENSION_NAME;
+                }
+
+                if (!strcmp(VK_KHR_SWAPCHAIN_EXTENSION_NAME, instance_extensions[i].extensionName)) {
+                    _data->instance_data.extension_names[_data->instance_data.enable_extension_count++] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
                 }
 
                 if (!strcmp(VK_EXT_DEBUG_REPORT_EXTENSION_NAME, instance_extensions[i].extensionName)) {
-                    _data.extension_names[_data.enable_extension_count++] = VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
+                    _data->instance_data.extension_names[_data->instance_data.enable_extension_count++] = VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
                 }
 
-                vk2d_assert(_data.enable_extension_count < 64);
+                vk2d_assert(_data->instance_data.enable_extension_count < 64);
             }
 
             free(instance_extensions);
@@ -131,13 +137,13 @@ i32 vk2d_init_renderer(vk2d_window* window)
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &appInfo;
         createInfo.enabledLayerCount = 1;
-        createInfo.enabledExtensionCount = _data.enable_extension_count;
-        createInfo.ppEnabledExtensionNames = (const char *const *)_data.extension_names;
-        createInfo.ppEnabledLayerNames = (const char *const *)_data.enabled_layers;
+        createInfo.enabledExtensionCount = _data->instance_data.enable_extension_count;
+        createInfo.ppEnabledExtensionNames = (const char *const *)_data->instance_data.extension_names;
+        createInfo.ppEnabledLayerNames = (const char *const *)_data->instance_data.enabled_layers;
 
-        res = vkCreateInstance(&createInfo, NULL, &_data.instance);
+        res = vkCreateInstance(&createInfo, NULL, &_data->instance_data.instance);
 
-        volkLoadInstance(_data.instance);
+        volkLoadInstance(_data->instance_data.instance);
     }
 
     // SURFACE
@@ -145,7 +151,7 @@ i32 vk2d_init_renderer(vk2d_window* window)
         // This is probably the most dumb shit i have ever written, please end my life
         // Why does this work jesus
         #if defined(_WIN32)
-        PFN_vkCreateWin32SurfaceKHR test = (PFN_vkCreateWin32SurfaceKHR)vkGetInstanceProcAddr(_data.instance, "vkCreateWin32SurfaceKHR");
+        PFN_vkCreateWin32SurfaceKHR test = (PFN_vkCreateWin32SurfaceKHR)vkGetInstanceProcAddr(_data->instance_data.instance, "vkCreateWin32SurfaceKHR");
         vk2d_assert(test != NULL);
 
         VkWin32SurfaceCreateInfoKHR surface_create_info = {
@@ -156,14 +162,15 @@ i32 vk2d_init_renderer(vk2d_window* window)
             glfwGetWin32Window(window->window_pointer)
         };
 
-        res = test(_data.instance, &surface_create_info, NULL, &_data.surface);
+        res = test(_data->instance_data.instance, &surface_create_info, NULL, &_data->surface);
         #endif
     }
 
-    // Physical Device
-    {
-        vk2d_init_gpu(_data.physical_device, _data.instance, _data.surface);
-    }
+    _data->physical_device = malloc(sizeof(vk2d_gpu));
+    vk2d_init_gpu(_data->physical_device, _data->instance_data.instance, _data->surface);
+    
+    _data->logical_device = malloc(sizeof(vk2d_device));
+    vk2d_init_device(_data->logical_device, _data->instance_data, _data->physical_device->gpu, _data->physical_device->indices);
 
     int is_good = res == VK_SUCCESS;
     return is_good;
@@ -171,6 +178,9 @@ i32 vk2d_init_renderer(vk2d_window* window)
 
 void vk2d_shutdown_renderer()
 {
-    vkDestroySurfaceKHR(_data.instance, _data.surface, NULL);
-    vkDestroyInstance(_data.instance, NULL);
+    vk2d_free_device(_data->logical_device);
+    free(_data->physical_device);
+    vkDestroySurfaceKHR(_data->instance_data.instance, _data->surface, NULL);
+    vkDestroyInstance(_data->instance_data.instance, NULL);
+    free(_data);
 }
