@@ -276,6 +276,63 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
     return is_good;
 }
 
+void vk2d_renderer_resize(u32 width, u32 height)
+{
+    vkDeviceWaitIdle(_data->logical_device->device);
+
+    vk2d_free_swapchain(_data->swap_chain);
+    vk2d_free_command(_data->render_command);
+    vk2d_free_pipeline(_data->sprite_pipeline);
+    vk2d_free_renderpass(_data->sprite_renderpass);
+    
+     // SWAPCHAIN
+    {
+        _data->swap_chain = vk2d_create_swapchain(_data->physical_device, _data->surface, width, height, 2);
+    }
+
+    if (_debug_enabled)
+    {
+        vk2d_log_info("Vk2D Debug Messenger", "Recreated swap chain with 2 buffers");
+    }
+
+    // SPRITE RENDERPASS
+    {
+        _data->sprite_renderpass = vk2d_create_renderpass("Sprite Render Pass", _data->swap_chain->swap_chain_image_format);
+    }
+
+    if (_debug_enabled)
+    {
+        vk2d_log_info("Vk2D Debug Messenger", "Recreated sprite render pass");
+    }
+
+    // FRAMEBUFFERS
+    {
+        vk2d_construct_framebuffers(_data->swap_chain, _data->sprite_renderpass);
+    }
+
+    if (_debug_enabled)
+    {
+        vk2d_log_info("Vk2D Debug Messenger", "Recreated swap chain framebuffers");
+    }
+
+    // SPRITE PIPELINE
+    {
+        vk2d_shader* shader = vk2d_create_shader("vk2d_shaders/vertex.spv", "vk2d_shaders/fragment.spv");
+        _data->sprite_pipeline = vk2d_create_pipeline(shader, width, height, _data->sprite_renderpass);
+        vk2d_free_shader(shader);
+    }
+
+    if (_debug_enabled)
+    {
+        vk2d_log_info("Vk2D Debug Messenger", "Recreated sprite graphics pipeline");
+    }
+
+    // RENDER COMMAND
+    {
+        _data->render_command = vk2d_create_command(_data->physical_device);
+    }
+}
+
 void vk2d_debug_draw()
 {
     vkWaitForFences(_data->logical_device->device, 1, &_data->fence, VK_TRUE, 1000000000);

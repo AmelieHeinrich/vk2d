@@ -64,6 +64,7 @@ vk2d_swapchain* vk2d_create_swapchain(vk2d_gpu* gpu, VkSurfaceKHR surface, i32 w
     result->swap_chain_image_views = malloc(sizeof(VkImageView) * num_buffers);
     for (i32 i = 0; i < num_buffers; i++) {
         VkImageViewCreateInfo iv_createInfo;
+        memset(&iv_createInfo, 0, sizeof(VkImageViewCreateInfo));
         iv_createInfo.flags = 0;
         iv_createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         iv_createInfo.image = result->swap_chain_images[i];

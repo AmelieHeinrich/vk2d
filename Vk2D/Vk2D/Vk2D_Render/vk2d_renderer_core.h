@@ -23,6 +23,9 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug);
 /// Destroys the Vk2D Renderer
 void vk2d_shutdown_renderer();
 
+/// Resizes the renderer
+void vk2d_renderer_resize(u32 width, u32 height);
+
 void vk2d_debug_draw();
 
 static i32 _debug_enabled;

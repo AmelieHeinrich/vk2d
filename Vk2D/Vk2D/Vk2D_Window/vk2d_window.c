@@ -2,6 +2,12 @@
 #include <stdlib.h>
 #include <GLFW/glfw3.h>
 #include <Vk2D/Vk2D_Base/vk2d_log.h>
+#include <Vk2D/Vk2D_Render/vk2d_renderer_core.h>
+
+static void resize_callback(GLFWwindow* window, int width, int height)
+{
+    vk2d_renderer_resize(width, height);
+}
 
 vk2d_window* vk2d_create_window(u32 width, u32 height, const char* title)
 {
@@ -15,6 +21,8 @@ vk2d_window* vk2d_create_window(u32 width, u32 height, const char* title)
     result->window_pointer = glfwCreateWindow(width, height, title, NULL, NULL);
 
     vk2d_assert(result != NULL);
+
+    glfwSetWindowSizeCallback(result->window_pointer, resize_callback);
 
     return result;
 }
