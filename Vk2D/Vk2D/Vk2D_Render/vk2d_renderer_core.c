@@ -217,10 +217,21 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
         vk2d_log_info("Vk2D Debug Messenger", "Created sprite render pass");
     }
 
+    // FRAMEBUFFERS
+    {
+        vk2d_construct_framebuffers(_data->swap_chain, _data->sprite_renderpass);
+    }
+
+    if (_debug_enabled)
+    {
+        vk2d_log_info("Vk2D Debug Messenger", "Created swap chain framebuffers");
+    }
+
     // SPRITE PIPELINE
     {
         vk2d_shader* shader = vk2d_create_shader("vk2d_shaders/vertex.spv", "vk2d_shaders/fragment.spv");
         _data->sprite_pipeline = vk2d_create_pipeline(shader, window->width, window->height, _data->sprite_renderpass);
+        vk2d_free_shader(shader);
     }
 
     if (_debug_enabled)
@@ -228,12 +239,144 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
         vk2d_log_info("Vk2D Debug Messenger", "Created sprite graphics pipeline");
     }
 
+    // RENDER COMMAND
+    {
+        _data->render_command = vk2d_create_command(_data->physical_device);
+    }
+
+    if (_debug_enabled)
+    {
+        vk2d_log_info("Vk2D Debug Messenger", "Created command pool and command buffers");
+    }
+
+    // SYNC OBJECTS
+    {
+        VkSemaphoreCreateInfo semaphoreInfo;
+        memset(&semaphoreInfo, 0, sizeof(VkSemaphoreCreateInfo));
+		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+		VkFenceCreateInfo fenceInfo;
+        memset(&fenceInfo, 0, sizeof(VkFenceCreateInfo));
+		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+        if (vkCreateSemaphore(_data->logical_device->device, &semaphoreInfo, NULL, &_data->image_available_semaphore) != VK_SUCCESS ||
+			vkCreateSemaphore(_data->logical_device->device, &semaphoreInfo, NULL, &_data->render_finished_semaphore) != VK_SUCCESS ||
+			vkCreateFence(_data->logical_device->device, &fenceInfo, NULL, &_data->fence) != VK_SUCCESS) {
+			vk2d_assert(1);
+		}
+    }
+
+    if (_debug_enabled)
+    {
+        vk2d_log_info("Vk2D Debug Messenger", "Created semaphores and fences");
+    }
+
     int is_good = res == VK_SUCCESS;
     return is_good;
 }
 
+void vk2d_debug_draw()
+{
+    vkWaitForFences(_data->logical_device->device, 1, &_data->fence, VK_TRUE, 1000000000);
+	vkResetFences(_data->logical_device->device, 1, &_data->fence);
+
+    u32 imageIndex;
+    vkAcquireNextImageKHR(_data->logical_device->device, _data->swap_chain->handle, 1000000000, _data->image_available_semaphore, VK_NULL_HANDLE, &imageIndex);
+
+    for (int i = 0; i < 2; i++)
+    {
+        vkResetCommandBuffer(_data->render_command->command_buffers[i], 0);
+    
+        VkCommandBuffer cbuf = _data->render_command->command_buffers[i];
+
+        VkCommandBufferBeginInfo beginInfo;
+        memset(&beginInfo, 0, sizeof(VkCommandBufferBeginInfo));
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.pInheritanceInfo = NULL;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        vk2d_assert(vkBeginCommandBuffer(cbuf, &beginInfo) == VK_SUCCESS);
+
+        VkClearValue clear;
+
+        VkClearColorValue clear_color;
+        clear_color.float32[0] = 0.1;
+        clear_color.float32[1] = 0.1;
+        clear_color.float32[2] = 0.1;
+        clear_color.float32[3] = 1.0;
+        
+        VkOffset2D offset;
+        offset.x = 0;
+        offset.y = 0;
+
+        memset(&clear, 0, sizeof(VkClearValue));
+        clear.color = clear_color;
+
+        VkRenderPassBeginInfo renderPassInfo;
+        memset(&renderPassInfo, 0, sizeof(VkRenderPassBeginInfo));
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = _data->sprite_renderpass->render_pass;
+		renderPassInfo.framebuffer = _data->swap_chain->swap_chain_framebuffers[imageIndex];
+		renderPassInfo.renderArea.offset = offset;
+		renderPassInfo.renderArea.extent = _data->swap_chain->swap_chain_extent;
+		renderPassInfo.clearValueCount = 1;
+		renderPassInfo.pClearValues = &clear;
+
+        vkCmdBeginRenderPass(cbuf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBindPipeline(cbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, _data->sprite_pipeline->pipeline);
+        vkCmdDraw(cbuf, 3, 1, 0, 0);
+        vkCmdEndRenderPass(cbuf);
+
+        vk2d_assert(vkEndCommandBuffer(cbuf) == VK_SUCCESS);
+    }
+
+    VkSubmitInfo submitInfo;
+    memset(&submitInfo, 0, sizeof(VkSubmitInfo));
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+	VkSemaphore waitSemaphores[] = {_data->image_available_semaphore };
+	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = waitSemaphores;
+	submitInfo.pWaitDstStageMask = waitStages;
+
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = _data->render_command->command_buffers;
+
+	VkSemaphore signalSemaphores[] = { _data->render_finished_semaphore };
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = signalSemaphores;
+
+	vkResetFences(_data->logical_device->device, 1, &_data->fence);
+
+	vk2d_assert(vkQueueSubmit(_data->logical_device->graphics_queue, 1, &submitInfo, _data->fence) == VK_SUCCESS);
+
+	VkPresentInfoKHR presentInfo;
+    memset(&presentInfo, 0, sizeof(VkPresentInfoKHR));
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = signalSemaphores;
+
+	VkSwapchainKHR swapChains[] = { _data->swap_chain->handle };
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = swapChains;
+
+	presentInfo.pImageIndices = &imageIndex;
+
+	vkQueuePresentKHR(_data->logical_device->present_queue, &presentInfo);
+}
+
 void vk2d_shutdown_renderer()
 {
+    vkDeviceWaitIdle(_data->logical_device->device);
+
+    vk2d_free_command(_data->render_command);
+
+    vkDestroyFence(_data->logical_device->device, _data->fence, NULL);
+	vkDestroySemaphore(_data->logical_device->device, _data->render_finished_semaphore, NULL);
+	vkDestroySemaphore(_data->logical_device->device, _data->image_available_semaphore, NULL);
+
     vk2d_free_pipeline(_data->sprite_pipeline);
     vk2d_free_renderpass(_data->sprite_renderpass);
     vk2d_free_swapchain(_data->swap_chain);

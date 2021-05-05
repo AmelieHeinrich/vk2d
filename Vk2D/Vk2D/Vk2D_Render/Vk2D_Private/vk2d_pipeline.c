@@ -135,8 +135,6 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, 
         vk2d_assert(res == VK_SUCCESS);
     }
 
-    vk2d_free_shader(shader);
-
     return result;
 }
 

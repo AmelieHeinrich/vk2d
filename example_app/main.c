@@ -13,6 +13,8 @@ int main()
     while (!vk2d_window_should_close(window))
     {
         vk2d_window_update(window);
+
+        vk2d_debug_draw();
     }
 
     vk2d_shutdown_renderer();

@@ -43,6 +43,11 @@ vk2d_shader* vk2d_create_shader(const char* vertexPath, const char* fragmentPath
         vk2d_assert(res == VK_SUCCESS);
     }
 
+    result->geometry_shader = VK_NULL_HANDLE;
+    result->compute_shader = VK_NULL_HANDLE;
+    result->tessellation_control_shader = VK_NULL_HANDLE;
+    result->tessellation_evaluation_shader = VK_NULL_HANDLE;
+
     free(vertexSource);
     free(fragmentSource);
 
@@ -121,17 +126,17 @@ void vk2d_free_shader(vk2d_shader* shader)
 {
     VkDevice device = volkGetLoadedDevice();
 
-    if (shader->vertex_shader)
+    if (shader->vertex_shader != VK_NULL_HANDLE)
         vkDestroyShaderModule(device, shader->vertex_shader, NULL);
-    if (shader->fragment_shader)
+    if (shader->fragment_shader != VK_NULL_HANDLE)
         vkDestroyShaderModule(device, shader->fragment_shader, NULL);
-    if (shader->geometry_shader)
+    if (shader->geometry_shader != VK_NULL_HANDLE)
         vkDestroyShaderModule(device, shader->geometry_shader, NULL);
-    if (shader->compute_shader)
+    if (shader->compute_shader != VK_NULL_HANDLE)
         vkDestroyShaderModule(device, shader->compute_shader, NULL);
-    if (shader->tessellation_control_shader)
+    if (shader->tessellation_control_shader != VK_NULL_HANDLE)
         vkDestroyShaderModule(device, shader->tessellation_control_shader, NULL);
-    if (shader->tessellation_evaluation_shader)
+    if (shader->tessellation_evaluation_shader != VK_NULL_HANDLE)
         vkDestroyShaderModule(device, shader->tessellation_evaluation_shader, NULL);
 
     free(shader);

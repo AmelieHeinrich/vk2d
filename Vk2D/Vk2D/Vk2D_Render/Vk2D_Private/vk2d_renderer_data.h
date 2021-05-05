@@ -11,6 +11,7 @@
 #include <Vk2D/Vk2D_Render/Vk2D_Private/vk2d_swapchain.h>
 #include <Vk2D/Vk2D_Render/Vk2D_Private/vk2d_pipeline.h>
 #include <Vk2D/Vk2D_Render/Vk2D_Private/vk2d_renderpass.h>
+#include <Vk2D/Vk2D_Render/Vk2D_Private/vk2d_command.h>
 
 typedef struct vk2d_renderer_data vk2d_renderer_data;
 struct vk2d_renderer_data
@@ -23,6 +24,11 @@ struct vk2d_renderer_data
 
     vk2d_pipeline* sprite_pipeline;
     vk2d_renderpass* sprite_renderpass;
+    
+    vk2d_command* render_command;
+    VkSemaphore image_available_semaphore;
+    VkSemaphore render_finished_semaphore;
+    VkFence fence;
 };
 
 static vk2d_renderer_data* _data;

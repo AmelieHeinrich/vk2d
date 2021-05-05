@@ -88,14 +88,42 @@ vk2d_swapchain* vk2d_create_swapchain(vk2d_gpu* gpu, VkSurfaceKHR surface, i32 w
     return result;
 }
 
+void vk2d_construct_framebuffers(vk2d_swapchain* sc, vk2d_renderpass* renderpass)
+{
+    VkDevice device = volkGetLoadedDevice();
+
+    sc->swap_chain_framebuffers = malloc(sizeof(VkFramebuffer) * sc->num_buffers);
+
+    for (size_t i = 0; i < sc->num_buffers; i++) {
+        VkImageView attachments[] = {
+            sc->swap_chain_image_views[i]
+        };
+
+        VkFramebufferCreateInfo framebufferInfo;
+        memset(&framebufferInfo, 0, sizeof(VkFramebufferCreateInfo));
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = renderpass->render_pass;
+        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.pAttachments = attachments;
+        framebufferInfo.width = sc->swap_chain_extent.width;
+        framebufferInfo.height = sc->swap_chain_extent.height;
+        framebufferInfo.layers = 1;
+
+        VkResult res = vkCreateFramebuffer(device, &framebufferInfo, NULL, &sc->swap_chain_framebuffers[i]);
+        vk2d_assert(res == VK_SUCCESS);
+    }
+}
+
 void vk2d_free_swapchain(vk2d_swapchain* swapchain)
 {
     VkDevice device = volkGetLoadedDevice();
 
     for (i32 i = 0; i < swapchain->num_buffers; i++) {
+        vkDestroyFramebuffer(device, swapchain->swap_chain_framebuffers[i], NULL);
         vkDestroyImageView(device, swapchain->swap_chain_image_views[i], NULL);
     }
 
+    free(swapchain->swap_chain_framebuffers);
     free(swapchain->swap_chain_image_views);
     free(swapchain->swap_chain_images);
     vkDestroySwapchainKHR(device, swapchain->handle, NULL);
