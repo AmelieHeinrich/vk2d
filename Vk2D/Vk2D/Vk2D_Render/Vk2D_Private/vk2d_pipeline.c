@@ -4,7 +4,7 @@
 #include <string.h>
 #include <Vk2D/Vk2D_Base/vk2d_log.h>
 
-vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height)
+vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, vk2d_renderpass* renderpass)
 {
     vk2d_pipeline* result = malloc(sizeof(vk2d_pipeline));
 
@@ -108,9 +108,30 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height)
     pipelineLayoutInfo.setLayoutCount = 0;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
 
+    VkDevice device = volkGetLoadedDevice();
     {
-        VkDevice device = volkGetLoadedDevice();
         VkResult res = vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL, &result->pipeline_layout);
+        vk2d_assert(res == VK_SUCCESS);
+    }
+
+    VkGraphicsPipelineCreateInfo pipelineInfo;
+    memset(&pipelineInfo, 0, sizeof(VkGraphicsPipelineCreateInfo));
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.stageCount = 2;
+    pipelineInfo.pStages = shaderStages;
+    pipelineInfo.pVertexInputState = &vertexInputInfo;
+    pipelineInfo.pInputAssemblyState = &inputAssembly;
+    pipelineInfo.pViewportState = &viewportState;
+    pipelineInfo.pRasterizationState = &rasterizer;
+    pipelineInfo.pMultisampleState = &multisampling;
+    pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.layout = result->pipeline_layout;
+    pipelineInfo.renderPass = renderpass->render_pass;
+    pipelineInfo.subpass = 0;
+    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+    {
+        VkResult res = vkCreateGraphicsPipelines(device, NULL, 1, &pipelineInfo, NULL, &result->pipeline);
         vk2d_assert(res == VK_SUCCESS);
     }
 
