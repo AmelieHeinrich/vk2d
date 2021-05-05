@@ -9,8 +9,11 @@ vk2d_shader* vk2d_create_shader(const char* vertexPath, const char* fragmentPath
 {
     vk2d_shader* result = malloc(sizeof(vk2d_shader));
 
-    char* vertexSource = vk2d_read_file(vertexPath);
-    char* fragmentSource = vk2d_read_file(fragmentPath);
+    u32 vertexSize;
+    u32* vertexSource = vk2d_read_spirv(vertexPath, &vertexSize);
+
+    u32 fragmentSize;
+    u32* fragmentSource = vk2d_read_spirv(fragmentPath, &fragmentSize);
 
     VkDevice device = volkGetLoadedDevice();
 
@@ -20,8 +23,8 @@ vk2d_shader* vk2d_create_shader(const char* vertexPath, const char* fragmentPath
         memset(&createInfo, 0, sizeof(VkShaderModuleCreateInfo));
 
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = sizeof(vertexSource) / sizeof(char);
-        createInfo.pCode = (const uint32_t*)vertexSource;
+        createInfo.codeSize = vertexSize;
+        createInfo.pCode = vertexSource;
 
         VkResult res = vkCreateShaderModule(device, &createInfo, NULL, &result->vertex_shader);
         vk2d_assert(res == VK_SUCCESS);
@@ -33,12 +36,15 @@ vk2d_shader* vk2d_create_shader(const char* vertexPath, const char* fragmentPath
         memset(&createInfo, 0, sizeof(VkShaderModuleCreateInfo));
 
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = sizeof(fragmentSource) / sizeof(char);
-        createInfo.pCode = (const uint32_t*)fragmentSource;
+        createInfo.codeSize = fragmentSize;
+        createInfo.pCode = fragmentSource;
 
         VkResult res = vkCreateShaderModule(device, &createInfo, NULL, &result->fragment_shader);
         vk2d_assert(res == VK_SUCCESS);
     }
+
+    free(vertexSource);
+    free(fragmentSource);
 
     return result;
 }

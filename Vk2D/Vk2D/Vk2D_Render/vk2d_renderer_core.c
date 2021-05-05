@@ -207,12 +207,19 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
         vk2d_log_info("Vk2D Debug Messenger", "Created swap chain with 2 buffers");
     }
 
+    // SPRITE PIPELINE
+    {
+        vk2d_shader* shader = vk2d_create_shader("vk2d_shaders/vertex.spv", "vk2d_shaders/fragment.spv");
+        _data->sprite_pipeline = vk2d_create_pipeline(shader, window->width, window->height);
+    }
+
     int is_good = res == VK_SUCCESS;
     return is_good;
 }
 
 void vk2d_shutdown_renderer()
 {
+    vk2d_free_pipeline(_data->sprite_pipeline);
     vk2d_free_swapchain(_data->swap_chain);
     vk2d_free_device(_data->logical_device);
     free(_data->physical_device);

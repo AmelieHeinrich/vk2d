@@ -13,6 +13,7 @@ CMakeCache.txt
 *.internal
 *.obj
 *.rsp
+*.spv
 .vscode
 Makefile
 build
