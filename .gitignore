@@ -15,3 +15,4 @@ CMakeCache.txt
 *.rsp
 .vscode
 Makefile
+build

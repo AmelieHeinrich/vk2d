@@ -15,7 +15,12 @@ struct vk2d_gpu_info
     u32 pipelineCacheUUID[16];
 };
 
+/// Initialises the Vk2D Renderer
+/// \param window The window that should be attached to the renderer
+/// \param enableDebug If enabled, a debug messenger will be activated
 i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug);
+
+/// Destroys the Vk2D Renderer
 void vk2d_shutdown_renderer();
 
 static i32 _debug_enabled;

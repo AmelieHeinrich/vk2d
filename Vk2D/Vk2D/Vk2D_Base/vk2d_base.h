@@ -13,11 +13,15 @@ typedef double d32;
 
 typedef enum vk2d_init_flags
 {
-    vk2d_init_video,
-    vk2d_init_everything
+    vk2d_init_video, // Initialises only the renderer subsystem
+    vk2d_init_everything // Initialises everything
 } vk2d_init_flags;
 
+/// Initialises Vk2D
+/// \param flags Subsystems to initialise
 i32 vk2d_init(vk2d_init_flags flags);
+
+/// Quits all the initialised subsystems
 void vk2d_quit();
 
 #endif

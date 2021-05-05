@@ -31,4 +31,5 @@ link_libraries(example_app Vk2D)
 
 target_include_directories(Vk2D PUBLIC "ext/glfw/include")
 target_include_directories(Vk2D PUBLIC "ext/volk")
+target_include_directories(Vk2D PUBLIC "ext/glslang/SPIRV" "ext/glslang/glslang/Public")
 target_include_directories(example_app PUBLIC "Vk2D")
