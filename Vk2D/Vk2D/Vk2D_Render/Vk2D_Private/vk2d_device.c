@@ -28,14 +28,18 @@ void vk2d_init_device(vk2d_device* dst, vk2d_instance_data data, VkPhysicalDevic
     VkPhysicalDeviceFeatures features;
     vkGetPhysicalDeviceFeatures(gpu, &features);
 
+    char* extensions[] = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    };
+
     VkDeviceCreateInfo create_info;
     memset(&create_info, 0, sizeof(VkDeviceCreateInfo));
     create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     create_info.queueCreateInfoCount = 2;
     create_info.pQueueCreateInfos = createInfos;
     create_info.pEnabledFeatures = &features;
-    create_info.enabledExtensionCount = 0;
-    create_info.ppEnabledExtensionNames = NULL;
+    create_info.enabledExtensionCount = 1;
+    create_info.ppEnabledExtensionNames = (const char *const *)extensions;
     create_info.enabledLayerCount = data.enable_layer_count;
     create_info.ppEnabledLayerNames = (const char *const *)data.enabled_layers;
 

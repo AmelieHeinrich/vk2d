@@ -154,6 +154,7 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
     }
 
     // SURFACE
+   
     {
         // This is probably the most dumb shit i have ever written, please end my life
         // Why does this work jesus
@@ -196,12 +197,23 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
         vk2d_log_info("Vk2D Debug Messenger", "Created logical device with 2 queues");
     }
 
+    // SWAPCHAIN
+    {
+        _data->swap_chain = vk2d_create_swapchain(_data->physical_device, _data->surface, window->width, window->height, 2);
+    }
+
+    if (_debug_enabled)
+    {
+        vk2d_log_info("Vk2D Debug Messenger", "Created swap chain with 2 buffers");
+    }
+
     int is_good = res == VK_SUCCESS;
     return is_good;
 }
 
 void vk2d_shutdown_renderer()
 {
+    vk2d_free_swapchain(_data->swap_chain);
     vk2d_free_device(_data->logical_device);
     free(_data->physical_device);
     vkDestroySurfaceKHR(_data->instance_data.instance, _data->surface, NULL);
