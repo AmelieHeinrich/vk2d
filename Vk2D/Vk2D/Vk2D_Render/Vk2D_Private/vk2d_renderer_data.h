@@ -13,6 +13,7 @@
 #include <Vk2D/Vk2D_Render/Vk2D_Private/vk2d_renderpass.h>
 #include <Vk2D/Vk2D_Render/Vk2D_Private/vk2d_command.h>
 #include <Vk2D/Vk2D_Render/Vk2D_Private/vk2d_vbuffer.h>
+#include <Vk2D/Vk2D_Render/Vk2D_Private/vk2d_ibuffer.h>
 
 typedef struct vk2d_renderer_data vk2d_renderer_data;
 struct vk2d_renderer_data

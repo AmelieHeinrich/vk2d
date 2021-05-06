@@ -1,51 +1,13 @@
-#include "vk2d_vbuffer.h"
+#include "vk2d_ibuffer.h"
 #include <Vk2D/Vk2D_Render/Vk2D_Private/vk2d_graphics_mem.h>
 #include <Vk2D/Vk2D_Base/vk2d_log.h>
 #include <Vk2D/Vk2D_Base/vk2d_list.h>
 
-VkVertexInputBindingDescription vk2d_get_binding_description()
+vk2d_ibuffer* vk2d_create_ibuffer(vk2d_gpu* gpu, vk2d_device* device, vk2d_command* command, i32 listSize, void* vertices)
 {
-    VkVertexInputBindingDescription bindingDescription;
-    vk2d_zero_memory(bindingDescription, sizeof(VkVertexInputBindingDescription));
-    bindingDescription.binding = 0;
-    bindingDescription.stride = sizeof(vk2d_vertex);
-    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    vk2d_new(vk2d_ibuffer* result, sizeof(vk2d_ibuffer));
 
-    return bindingDescription;
-}
-
-VkVertexInputAttributeDescription* vk2d_get_attribute_descriptions()
-{
-    vk2d_new(VkVertexInputAttributeDescription* attributeDescriptions, sizeof(VkVertexInputAttributeDescription) * 4);
-
-    attributeDescriptions[0].binding = 0;
-    attributeDescriptions[0].location = 0;
-    attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[0].offset = offsetof(vk2d_vertex, position);
-
-    attributeDescriptions[1].binding = 0;
-    attributeDescriptions[1].location = 1;
-    attributeDescriptions[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    attributeDescriptions[1].offset = offsetof(vk2d_vertex, color);
-
-    attributeDescriptions[2].binding = 0;
-    attributeDescriptions[2].location = 2;
-    attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-    attributeDescriptions[2].offset = offsetof(vk2d_vertex, tex_coords);
-
-    attributeDescriptions[3].binding = 0;
-    attributeDescriptions[3].location = 3;
-    attributeDescriptions[3].format = VK_FORMAT_R32_SINT;
-    attributeDescriptions[3].offset = offsetof(vk2d_vertex, tex_index);
-
-    return attributeDescriptions;
-}
-
-vk2d_vbuffer* vk2d_create_vbuffer(vk2d_gpu* gpu, vk2d_device* device, vk2d_command* command, i32 listSize, void* vertices)
-{
-    vk2d_new(vk2d_vbuffer* result, sizeof(vk2d_vbuffer));
-
-    VkDeviceSize bufferSize = listSize * sizeof(vk2d_vertex);
+    VkDeviceSize bufferSize = listSize * sizeof(u32);
 
     VkBuffer stagingBuffer = VK_NULL_HANDLE;
     VkDeviceMemory stagingBufferMemory = 0;
@@ -90,7 +52,7 @@ vk2d_vbuffer* vk2d_create_vbuffer(vk2d_gpu* gpu, vk2d_device* device, vk2d_comma
         vk2d_zero_memory(bufferInfo, sizeof(VkBufferCreateInfo));
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bufferInfo.size = bufferSize;
-        bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
         if (vkCreateBuffer(device->device, &bufferInfo, NULL, &result->buffer) != VK_SUCCESS) {
@@ -159,22 +121,22 @@ vk2d_vbuffer* vk2d_create_vbuffer(vk2d_gpu* gpu, vk2d_device* device, vk2d_comma
     vkDestroyBuffer(device->device, stagingBuffer, NULL);
     vkFreeMemory(device->device, stagingBufferMemory, NULL);
 
-    result->vertex_count = listSize;
+    result->index_count = listSize;
 
     return result;
 }
 
-void vk2d_set_vbuffer_data(vk2d_vbuffer* buffer, i32 listSize, void* vertices)
+void vk2d_set_ibuffer_data(vk2d_ibuffer* buffer, i32 listSize, void* vertices)
 {
     VkDevice device = volkGetLoadedDevice();
 
     void* data;
-    vkMapMemory(device, buffer->buffer_memory, 0, listSize * sizeof(vk2d_vertex), 0, &data);
-    memcpy(data, vertices, (size_t)(listSize * sizeof(vk2d_vertex)));
+    vkMapMemory(device, buffer->buffer_memory, 0, listSize * sizeof(u32), 0, &data);
+    memcpy(data, vertices, (size_t)(listSize * sizeof(u32)));
     vkUnmapMemory(device, buffer->buffer_memory);
 }
 
-void vk2d_free_vbuffer(vk2d_vbuffer* buffer)
+void vk2d_free_ibuffer(vk2d_ibuffer* buffer)
 {
     VkDevice device = volkGetLoadedDevice();
 

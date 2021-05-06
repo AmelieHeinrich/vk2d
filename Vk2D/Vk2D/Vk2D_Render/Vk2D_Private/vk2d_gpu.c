@@ -20,7 +20,7 @@ vk2d_queue_family_indices vk2d_find_queue_families(VkPhysicalDevice device, VkSu
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies);
 
     i32 j = 0;
-    for (i32 i = 0; i < queueFamilyCount; i++)
+    for (u32 i = 0; i < queueFamilyCount; i++)
     {
         if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
             indices.graphics_family = j;

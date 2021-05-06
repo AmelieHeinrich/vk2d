@@ -23,6 +23,7 @@ struct vk2d_vbuffer
 {
     VkBuffer buffer;
     VkDeviceMemory buffer_memory;
+    u32 vertex_count;
 };
 
 VkVertexInputBindingDescription vk2d_get_binding_description();

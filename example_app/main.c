@@ -6,6 +6,12 @@ void resize_cb(int l, int h)
     vk2d_log_info("Vk2D Sandbox", "Resized window!");
 }
 
+#ifdef _DEBUG
+static int debug = 1;
+#else
+static int debug = 0;
+#endif
+
 int main()
 {
     i32 result = vk2d_init(vk2d_init_everything);
@@ -13,7 +19,7 @@ int main()
 
     vk2d_window* window = vk2d_create_window(1280, 720, "Hello, Vk2D!");
     vk2d_event_bind("window_resize", resize_cb);
-    result = vk2d_init_renderer(window, 0);
+    result = vk2d_init_renderer(window, debug);
     vk2d_assert(result != 0);
 
     while (!vk2d_window_should_close(window))

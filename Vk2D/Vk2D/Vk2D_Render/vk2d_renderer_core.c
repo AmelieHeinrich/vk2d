@@ -40,6 +40,7 @@ static VkBool32 demo_check_layers(u32 check_count, char **check_names,
 }
 
 static vk2d_vbuffer* debug_vbuffer = NULL;
+static vk2d_ibuffer* debug_ibuffer = NULL;
 
 i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
 {
@@ -187,7 +188,7 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
     if (_debug_enabled)
     {
         char dest[50] = "Using GPU with name: ";
-        strcat(dest, _data->physical_device->gpu_props.deviceName);
+        strcat_s(dest, sizeof(dest), _data->physical_device->gpu_props.deviceName);
         vk2d_log_info("Vk2D Debug Messenger", dest);
     }
     
@@ -275,12 +276,18 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
     }
 
     vk2d_vertex vertices[] = {
-        { vk2d_vec3_new( 0.0,-0.5, 0.0), vk2d_vec4_new(1, 1, 1, 1), vk2d_vec2_new(0, 0), 0 },
-        { vk2d_vec3_new( 0.5, 0.5, 0.0), vk2d_vec4_new(0, 1, 0, 1), vk2d_vec2_new(0, 0), 0 },
-        { vk2d_vec3_new(-0.5, 0.5, 0.0), vk2d_vec4_new(0, 0, 1, 1), vk2d_vec2_new(0, 0), 0 }
+        { vk2d_vec3_new(-0.5,-0.5, 0.0), vk2d_vec4_new(1, 1, 1, 1), vk2d_vec2_new(0, 0), 0 },
+        { vk2d_vec3_new( 0.5,-0.5, 0.0), vk2d_vec4_new(0, 1, 0, 1), vk2d_vec2_new(0, 0), 0 },
+        { vk2d_vec3_new( 0.5, 0.5, 0.0), vk2d_vec4_new(0, 0, 1, 1), vk2d_vec2_new(0, 0), 0 },
+        { vk2d_vec3_new(-0.5, 0.5, 0.0), vk2d_vec4_new(1, 1, 0, 1), vk2d_vec2_new(0, 0), 0 }
     };
 
-    debug_vbuffer = vk2d_create_vbuffer(_data->physical_device, _data->logical_device, _data->render_command, 3, vertices);
+    u32 indices[] = {
+        0, 1, 2, 2, 3, 0
+    };
+
+    debug_vbuffer = vk2d_create_vbuffer(_data->physical_device, _data->logical_device, _data->render_command, 4, vertices);
+    debug_ibuffer = vk2d_create_ibuffer(_data->physical_device, _data->logical_device, _data->render_command, 6, indices);
 
     int is_good = res == VK_SUCCESS;
     return is_good;
@@ -368,10 +375,10 @@ void vk2d_debug_draw()
         VkClearValue clear;
 
         VkClearColorValue clear_color;
-        clear_color.float32[0] = 0.1;
-        clear_color.float32[1] = 0.1;
-        clear_color.float32[2] = 0.1;
-        clear_color.float32[3] = 1.0;
+        clear_color.float32[0] = 0.1f;
+        clear_color.float32[1] = 0.1f;
+        clear_color.float32[2] = 0.1f;
+        clear_color.float32[3] = 1.0f;
         
         VkOffset2D offset;
         offset.x = 0;
@@ -396,7 +403,8 @@ void vk2d_debug_draw()
         vkCmdBeginRenderPass(cbuf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(cbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, _data->sprite_pipeline->pipeline);
         vkCmdBindVertexBuffers(cbuf, 0, 1, buffers, &size);
-        vkCmdDraw(cbuf, 3, 1, 0, 0);
+        vkCmdBindIndexBuffer(cbuf, debug_ibuffer->buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdDrawIndexed(cbuf, debug_ibuffer->index_count, 1, 0, 0, 0);
         vkCmdEndRenderPass(cbuf);
 
         vk2d_assert(vkEndCommandBuffer(cbuf) == VK_SUCCESS);
@@ -442,6 +450,7 @@ void vk2d_shutdown_renderer()
 {
     vkDeviceWaitIdle(_data->logical_device->device);
 
+    vk2d_free_ibuffer(debug_ibuffer);
     vk2d_free_vbuffer(debug_vbuffer);
     vk2d_free_command(_data->render_command);
 
