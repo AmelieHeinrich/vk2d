@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <Vk2D/Vk2D_Base/vk2d_log.h>
+#include <Vk2D/Vk2D_Render/Vk2D_Private/vk2d_vbuffer.h>
 
 vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, vk2d_renderpass* renderpass)
 {
@@ -24,13 +25,18 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, 
 
     // TODO : Add other shaders
 
+    VkVertexInputBindingDescription description = vk2d_get_binding_description();
+    VkVertexInputAttributeDescription* descriptions = vk2d_get_attribute_descriptions();
+
     VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo;
     vk2d_zero_memory(vertexInputInfo, sizeof(VkPipelineVertexInputStateCreateInfo));
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.vertexAttributeDescriptionCount = 4;
+    vertexInputInfo.pVertexBindingDescriptions = &description;
+	vertexInputInfo.pVertexAttributeDescriptions = descriptions;
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly;
     vk2d_zero_memory(inputAssembly, sizeof(VkPipelineInputAssemblyStateCreateInfo));
@@ -134,6 +140,8 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, 
         VkResult res = vkCreateGraphicsPipelines(device, NULL, 1, &pipelineInfo, NULL, &result->pipeline);
         vk2d_assert(res == VK_SUCCESS);
     }
+
+    vk2d_free(descriptions);
 
     return result;
 }

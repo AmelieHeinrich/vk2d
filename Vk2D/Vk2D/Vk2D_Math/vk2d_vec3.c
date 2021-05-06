@@ -16,7 +16,7 @@ vk2d_vec3 vk2d_vec3_identity()
     return vk2d_vec3_new(0, 0, 0); 
 }
 
-vk2d_vec3 vk2d_vec2_scalar(f32 scalar) 
+vk2d_vec3 vk2d_vec3_scalar(f32 scalar) 
 { 
     return vk2d_vec3_new(scalar, scalar, scalar); 
 }

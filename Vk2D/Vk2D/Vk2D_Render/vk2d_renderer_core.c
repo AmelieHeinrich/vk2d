@@ -39,6 +39,8 @@ static VkBool32 demo_check_layers(u32 check_count, char **check_names,
     return 1;
 }
 
+static vk2d_vbuffer* debug_vbuffer = NULL;
+
 i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
 {
     _debug_enabled = enableDebug;
@@ -272,6 +274,14 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
         vk2d_log_info("Vk2D Debug Messenger", "Created semaphores and fences");
     }
 
+    vk2d_vertex vertices[] = {
+        { vk2d_vec3_new( 0.0,-0.5, 0.0), vk2d_vec4_new(1, 1, 1, 1), vk2d_vec2_new(0, 0), 0 },
+        { vk2d_vec3_new( 0.5, 0.5, 0.0), vk2d_vec4_new(0, 1, 0, 1), vk2d_vec2_new(0, 0), 0 },
+        { vk2d_vec3_new(-0.5, 0.5, 0.0), vk2d_vec4_new(0, 0, 1, 1), vk2d_vec2_new(0, 0), 0 }
+    };
+
+    debug_vbuffer = vk2d_create_vbuffer(_data->physical_device, _data->logical_device, _data->render_command, 3, vertices);
+
     int is_good = res == VK_SUCCESS;
     return is_good;
 }
@@ -380,8 +390,12 @@ void vk2d_debug_draw()
 		renderPassInfo.clearValueCount = 1;
 		renderPassInfo.pClearValues = &clear;
 
+        VkDeviceSize size = { 0 };
+        VkBuffer buffers[] = { debug_vbuffer->buffer };
+
         vkCmdBeginRenderPass(cbuf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(cbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, _data->sprite_pipeline->pipeline);
+        vkCmdBindVertexBuffers(cbuf, 0, 1, buffers, &size);
         vkCmdDraw(cbuf, 3, 1, 0, 0);
         vkCmdEndRenderPass(cbuf);
 
@@ -428,6 +442,7 @@ void vk2d_shutdown_renderer()
 {
     vkDeviceWaitIdle(_data->logical_device->device);
 
+    vk2d_free_vbuffer(debug_vbuffer);
     vk2d_free_command(_data->render_command);
 
     vkDestroyFence(_data->logical_device->device, _data->fence, NULL);
