@@ -5,6 +5,8 @@
 #include <Vk2D/Vk2D_Base/vk2d_base.h>
 #include <Vk2D/Vk2D_Base/vk2d_log.h>
 #include <Vk2D/Vk2D_Base/vk2d_list.h>
+#include <Vk2D/Vk2D_Base/vk2d_map.h>
+#include <Vk2D/Vk2D_Base/vk2d_event.h>
 
 // Math
 #include <Vk2D/Vk2D_Math/vk2d_vec2.h>
