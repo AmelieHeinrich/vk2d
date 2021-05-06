@@ -8,7 +8,7 @@ vk2d_swapchain* vk2d_create_swapchain(vk2d_gpu* gpu, VkSurfaceKHR surface, i32 w
     vk2d_assert(gpu != NULL);
     vk2d_assert(surface != VK_NULL_HANDLE);
 
-    vk2d_swapchain* result = malloc(sizeof(vk2d_swapchain));   
+    vk2d_new(vk2d_swapchain* result, sizeof(vk2d_swapchain));
     result->num_buffers = num_buffers;
 
     VkExtent2D extent;
@@ -21,7 +21,7 @@ vk2d_swapchain* vk2d_create_swapchain(vk2d_gpu* gpu, VkSurfaceKHR surface, i32 w
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu->gpu, surface, &capabilities);
 
     VkSwapchainCreateInfoKHR createInfo;
-    memset(&createInfo, 0, sizeof(VkSwapchainCreateInfoKHR));
+    vk2d_zero_memory(createInfo, sizeof(VkSwapchainCreateInfoKHR));
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.surface = surface;
     createInfo.minImageCount = num_buffers;
@@ -44,7 +44,7 @@ vk2d_swapchain* vk2d_create_swapchain(vk2d_gpu* gpu, VkSurfaceKHR surface, i32 w
 
     u32 formatCount;
     vkGetPhysicalDeviceSurfaceFormatsKHR(gpu->gpu, surface, &formatCount, NULL);
-    VkSurfaceFormatKHR* formats = malloc(sizeof(VkSurfaceFormatKHR) * formatCount);
+    vk2d_new(VkSurfaceFormatKHR* formats, sizeof(VkSurfaceFormatKHR) * formatCount)
     vkGetPhysicalDeviceSurfaceFormatsKHR(gpu->gpu, surface, &formatCount, formats);
 
     createInfo.imageFormat = formats[0].format;
@@ -55,7 +55,7 @@ vk2d_swapchain* vk2d_create_swapchain(vk2d_gpu* gpu, VkSurfaceKHR surface, i32 w
 
     i32 imageCount;
     vkGetSwapchainImagesKHR(device, result->handle, &imageCount, NULL);
-    result->swap_chain_images = malloc(sizeof(VkImage) * imageCount);
+    vk2d_new(result->swap_chain_images, sizeof(VkImage) * imageCount);
     vkGetSwapchainImagesKHR(device, result->handle, &imageCount, result->swap_chain_images);
 
     result->swap_chain_extent = extent;
@@ -64,7 +64,7 @@ vk2d_swapchain* vk2d_create_swapchain(vk2d_gpu* gpu, VkSurfaceKHR surface, i32 w
     result->swap_chain_image_views = malloc(sizeof(VkImageView) * num_buffers);
     for (i32 i = 0; i < num_buffers; i++) {
         VkImageViewCreateInfo iv_createInfo;
-        memset(&iv_createInfo, 0, sizeof(VkImageViewCreateInfo));
+        vk2d_zero_memory(iv_createInfo, sizeof(VkImageViewCreateInfo));
         iv_createInfo.flags = 0;
         iv_createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         iv_createInfo.image = result->swap_chain_images[i];
@@ -84,7 +84,7 @@ vk2d_swapchain* vk2d_create_swapchain(vk2d_gpu* gpu, VkSurfaceKHR surface, i32 w
         vk2d_assert(res == VK_SUCCESS);
     }
 
-    free(formats);
+    vk2d_free(formats);
 
     return result;
 }
@@ -93,7 +93,7 @@ void vk2d_construct_framebuffers(vk2d_swapchain* sc, vk2d_renderpass* renderpass
 {
     VkDevice device = volkGetLoadedDevice();
 
-    sc->swap_chain_framebuffers = malloc(sizeof(VkFramebuffer) * sc->num_buffers);
+    vk2d_new(sc->swap_chain_framebuffers, sizeof(VkFramebuffer) * sc->num_buffers)
 
     for (size_t i = 0; i < sc->num_buffers; i++) {
         VkImageView attachments[] = {
@@ -101,7 +101,7 @@ void vk2d_construct_framebuffers(vk2d_swapchain* sc, vk2d_renderpass* renderpass
         };
 
         VkFramebufferCreateInfo framebufferInfo;
-        memset(&framebufferInfo, 0, sizeof(VkFramebufferCreateInfo));
+        vk2d_zero_memory(framebufferInfo, sizeof(VkFramebufferCreateInfo));
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = renderpass->render_pass;
         framebufferInfo.attachmentCount = 1;
@@ -124,9 +124,9 @@ void vk2d_free_swapchain(vk2d_swapchain* swapchain)
         vkDestroyImageView(device, swapchain->swap_chain_image_views[i], NULL);
     }
 
-    free(swapchain->swap_chain_framebuffers);
-    free(swapchain->swap_chain_image_views);
-    free(swapchain->swap_chain_images);
+    vk2d_free(swapchain->swap_chain_framebuffers);
+    vk2d_free(swapchain->swap_chain_image_views);
+    vk2d_free(swapchain->swap_chain_images);
     vkDestroySwapchainKHR(device, swapchain->handle, NULL);
-    free(swapchain);
+    vk2d_free(swapchain);
 }

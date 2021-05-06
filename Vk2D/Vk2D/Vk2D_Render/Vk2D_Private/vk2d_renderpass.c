@@ -5,10 +5,10 @@
 
 vk2d_renderpass* vk2d_create_renderpass(const char* name, VkFormat format)
 {
-    vk2d_renderpass* result = malloc(sizeof(vk2d_renderpass));
+    vk2d_new(vk2d_renderpass* result, sizeof(vk2d_renderpass));
 
     VkAttachmentDescription colorAttachment;
-    memset(&colorAttachment, 0, sizeof(VkAttachmentDescription));
+    vk2d_zero_memory(colorAttachment, sizeof(VkAttachmentDescription));
     colorAttachment.format = format;
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -19,18 +19,18 @@ vk2d_renderpass* vk2d_create_renderpass(const char* name, VkFormat format)
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     VkAttachmentReference colorAttachmentRef;
-    memset(&colorAttachmentRef, 0, sizeof(VkAttachmentReference));
+    vk2d_zero_memory(colorAttachmentRef, sizeof(VkAttachmentReference));
     colorAttachmentRef.attachment = 0;
     colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription subpass;
-    memset(&subpass, 0, sizeof(VkSubpassDescription));
+    vk2d_zero_memory(subpass, sizeof(VkSubpassDescription));
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colorAttachmentRef;
 
     VkSubpassDependency dependency;
-    memset(&dependency, 0, sizeof(VkSubpassDependency));
+    vk2d_zero_memory(dependency, sizeof(VkSubpassDependency));
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
     dependency.dstSubpass = 0;
     dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -39,7 +39,7 @@ vk2d_renderpass* vk2d_create_renderpass(const char* name, VkFormat format)
     dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
     VkRenderPassCreateInfo renderPassInfo;
-    memset(&renderPassInfo, 0, sizeof(VkRenderPassCreateInfo));
+    vk2d_zero_memory(renderPassInfo, sizeof(VkRenderPassCreateInfo));
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     renderPassInfo.attachmentCount = 1;
     renderPassInfo.pAttachments = &colorAttachment;
@@ -64,5 +64,5 @@ void vk2d_free_renderpass(vk2d_renderpass* renderpass)
     if (renderpass->render_pass != VK_NULL_HANDLE)
         vkDestroyRenderPass(device, renderpass->render_pass, NULL);
 
-    free(renderpass);
+    vk2d_free(renderpass);
 }

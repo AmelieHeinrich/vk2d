@@ -6,13 +6,13 @@
 
 vk2d_command* vk2d_create_command(vk2d_gpu* gpu)
 {
-    vk2d_command* result = malloc(sizeof(vk2d_command));
-    result->command_buffers = malloc(sizeof(VkCommandBuffer) * 2);
+    vk2d_new(vk2d_command* result, sizeof(vk2d_command));
+    vk2d_new(result->command_buffers, sizeof(VkCommandBuffer) * 2);
 
     VkDevice device = volkGetLoadedDevice();
 
     VkCommandPoolCreateInfo poolInfo;
-    memset(&poolInfo, 0, sizeof(VkCommandPoolCreateInfo));
+    vk2d_zero_memory(poolInfo, sizeof(VkCommandPoolCreateInfo));
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex = gpu->indices.graphics_family;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
@@ -23,7 +23,7 @@ vk2d_command* vk2d_create_command(vk2d_gpu* gpu)
     }
 
     VkCommandBufferAllocateInfo allocInfo;
-    memset(&allocInfo, 0, sizeof(VkCommandBufferAllocateInfo));
+    vk2d_zero_memory(allocInfo, sizeof(VkCommandBufferAllocateInfo));
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = result->command_pool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -43,6 +43,6 @@ void vk2d_free_command(vk2d_command* command)
 
     vkDestroyCommandPool(device, command->command_pool, NULL);
 
-    free(command->command_buffers);
-    free(command);
+    vk2d_free(command->command_buffers);
+    vk2d_free(command);
 }

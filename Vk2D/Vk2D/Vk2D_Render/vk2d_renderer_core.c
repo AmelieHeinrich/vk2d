@@ -47,7 +47,7 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
 
     VkResult res = volkInitialize();
 
-    _data = malloc(sizeof(vk2d_renderer_data));
+    vk2d_new(_data, sizeof(vk2d_renderer_data));
 
     _data->instance_data.enable_extension_count = 0;
     _data->instance_data.enable_layer_count = 0;
@@ -91,7 +91,7 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
 
         VkBool32 surfaceExtFound = 0;
         VkBool32 platformSurfaceExtFound = 0;
-        memset(_data->instance_data.extension_names, 0, sizeof(_data->instance_data.extension_names));
+        vk2d_zero_memory_ptr(_data->instance_data.extension_names, sizeof(_data->instance_data.extension_names))
         res = vkEnumerateInstanceExtensionProperties(NULL, &instance_extension_count, NULL);
         vk2d_assert(!res);
 
@@ -124,7 +124,7 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
         }
 
         VkApplicationInfo appInfo;
-        memset(&appInfo, 0, sizeof(VkApplicationInfo));
+        vk2d_zero_memory(appInfo, sizeof(VkApplicationInfo));
         appInfo.pNext = NULL;
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         appInfo.pApplicationName = "Vk2d App";
@@ -134,7 +134,7 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
         appInfo.apiVersion = VK_API_VERSION_1_0;
 
         VkInstanceCreateInfo createInfo;
-        memset(&createInfo, 0, sizeof(VkInstanceCreateInfo));
+        vk2d_zero_memory(createInfo, sizeof(VkInstanceCreateInfo));
         createInfo.pNext = NULL;
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &appInfo;
@@ -179,7 +179,7 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
         }
     }
 
-    _data->physical_device = malloc(sizeof(vk2d_gpu));
+    vk2d_new(_data->physical_device, sizeof(vk2d_gpu));
     vk2d_init_gpu(_data->physical_device, _data->instance_data.instance, _data->surface);
 
     if (_debug_enabled)
@@ -189,7 +189,7 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
         vk2d_log_info("Vk2D Debug Messenger", dest);
     }
     
-    _data->logical_device = malloc(sizeof(vk2d_device));
+    vk2d_new(_data->logical_device, sizeof(vk2d_device));
     vk2d_init_device(_data->logical_device, _data->instance_data, _data->physical_device->gpu, _data->physical_device->indices);
 
     if (_debug_enabled)
@@ -252,11 +252,11 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
     // SYNC OBJECTS
     {
         VkSemaphoreCreateInfo semaphoreInfo;
-        memset(&semaphoreInfo, 0, sizeof(VkSemaphoreCreateInfo));
+        vk2d_zero_memory(semaphoreInfo, sizeof(VkSemaphoreCreateInfo));
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
 		VkFenceCreateInfo fenceInfo;
-        memset(&fenceInfo, 0, sizeof(VkFenceCreateInfo));
+        vk2d_zero_memory(fenceInfo, sizeof(VkFenceCreateInfo));
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
@@ -348,7 +348,7 @@ void vk2d_debug_draw()
         VkCommandBuffer cbuf = _data->render_command->command_buffers[i];
 
         VkCommandBufferBeginInfo beginInfo;
-        memset(&beginInfo, 0, sizeof(VkCommandBufferBeginInfo));
+        vk2d_zero_memory(beginInfo, sizeof(VkCommandBufferBeginInfo));
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.pInheritanceInfo = NULL;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -367,11 +367,11 @@ void vk2d_debug_draw()
         offset.x = 0;
         offset.y = 0;
 
-        memset(&clear, 0, sizeof(VkClearValue));
+        vk2d_zero_memory(clear, sizeof(VkClearValue))
         clear.color = clear_color;
 
         VkRenderPassBeginInfo renderPassInfo;
-        memset(&renderPassInfo, 0, sizeof(VkRenderPassBeginInfo));
+        vk2d_zero_memory(renderPassInfo, sizeof(VkRenderPassBeginInfo))
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = _data->sprite_renderpass->render_pass;
 		renderPassInfo.framebuffer = _data->swap_chain->swap_chain_framebuffers[imageIndex];
@@ -389,7 +389,7 @@ void vk2d_debug_draw()
     }
 
     VkSubmitInfo submitInfo;
-    memset(&submitInfo, 0, sizeof(VkSubmitInfo));
+    vk2d_zero_memory(submitInfo, sizeof(VkSubmitInfo));
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
 	VkSemaphore waitSemaphores[] = {_data->image_available_semaphore };
@@ -410,7 +410,7 @@ void vk2d_debug_draw()
 	vk2d_assert(vkQueueSubmit(_data->logical_device->graphics_queue, 1, &submitInfo, _data->fence) == VK_SUCCESS);
 
 	VkPresentInfoKHR presentInfo;
-    memset(&presentInfo, 0, sizeof(VkPresentInfoKHR));
+    vk2d_zero_memory(presentInfo, sizeof(VkPresentInfoKHR));
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = 1;
 	presentInfo.pWaitSemaphores = signalSemaphores;
@@ -438,8 +438,8 @@ void vk2d_shutdown_renderer()
     vk2d_free_renderpass(_data->sprite_renderpass);
     vk2d_free_swapchain(_data->swap_chain);
     vk2d_free_device(_data->logical_device);
-    free(_data->physical_device);
+    vk2d_free(_data->physical_device);
     vkDestroySurfaceKHR(_data->instance_data.instance, _data->surface, NULL);
     vkDestroyInstance(_data->instance_data.instance, NULL);
-    free(_data);
+    vk2d_free(_data);
 }

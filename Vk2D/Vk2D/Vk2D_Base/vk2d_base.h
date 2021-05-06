@@ -1,6 +1,8 @@
 #ifndef VK2D_BASE_H
 #define VK2D_BASE_H
 
+#include <Vk2D/Vk2D_Base/vk2d_mem.h>
+
 // typedefs
 typedef char i8;
 typedef unsigned char u8;

@@ -33,7 +33,7 @@ void vk2d_init_device(vk2d_device* dst, vk2d_instance_data data, VkPhysicalDevic
     };
 
     VkDeviceCreateInfo create_info;
-    memset(&create_info, 0, sizeof(VkDeviceCreateInfo));
+    vk2d_zero_memory(create_info, sizeof(VkDeviceCreateInfo));
     create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     create_info.queueCreateInfoCount = 2;
     create_info.pQueueCreateInfos = createInfos;
@@ -55,5 +55,5 @@ void vk2d_init_device(vk2d_device* dst, vk2d_instance_data data, VkPhysicalDevic
 void vk2d_free_device(vk2d_device* device)
 {
     vkDestroyDevice(device->device, NULL);
-    free(device);
+    vk2d_free(device);
 }

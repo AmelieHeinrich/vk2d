@@ -7,7 +7,7 @@
 
 vk2d_shader* vk2d_create_shader(const char* vertexPath, const char* fragmentPath)
 {
-    vk2d_shader* result = malloc(sizeof(vk2d_shader));
+    vk2d_new(vk2d_shader* result, sizeof(vk2d_shader));
 
     u32 vertexSize;
     u32* vertexSource = vk2d_read_spirv(vertexPath, &vertexSize);
@@ -20,7 +20,7 @@ vk2d_shader* vk2d_create_shader(const char* vertexPath, const char* fragmentPath
     // Vertex shader module
     {
         VkShaderModuleCreateInfo createInfo;
-        memset(&createInfo, 0, sizeof(VkShaderModuleCreateInfo));
+        vk2d_zero_memory(createInfo, sizeof(VkShaderModuleCreateInfo));
 
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         createInfo.codeSize = vertexSize;
@@ -33,7 +33,7 @@ vk2d_shader* vk2d_create_shader(const char* vertexPath, const char* fragmentPath
     // Fragment shader module
     {
         VkShaderModuleCreateInfo createInfo;
-        memset(&createInfo, 0, sizeof(VkShaderModuleCreateInfo));
+        vk2d_zero_memory(createInfo, sizeof(VkShaderModuleCreateInfo));
 
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         createInfo.codeSize = fragmentSize;
@@ -48,8 +48,8 @@ vk2d_shader* vk2d_create_shader(const char* vertexPath, const char* fragmentPath
     result->tessellation_control_shader = VK_NULL_HANDLE;
     result->tessellation_evaluation_shader = VK_NULL_HANDLE;
 
-    free(vertexSource);
-    free(fragmentSource);
+    vk2d_free(vertexSource);
+    vk2d_free(fragmentSource);
 
     return result;
 }
@@ -61,7 +61,7 @@ void vk2d_make_geometry_shader(vk2d_shader* shader, const char* geometryPath)
     VkDevice device = volkGetLoadedDevice();
 
     VkShaderModuleCreateInfo createInfo;
-    memset(&createInfo, 0, sizeof(VkShaderModuleCreateInfo));
+    vk2d_zero_memory(createInfo, sizeof(VkShaderModuleCreateInfo));
 
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = sizeof(source) / sizeof(char);
@@ -78,7 +78,7 @@ void vk2d_make_compute_shader(vk2d_shader* shader, const char* computeShader)
     VkDevice device = volkGetLoadedDevice();
 
     VkShaderModuleCreateInfo createInfo;
-    memset(&createInfo, 0, sizeof(VkShaderModuleCreateInfo));
+    vk2d_zero_memory(createInfo, sizeof(VkShaderModuleCreateInfo));
 
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = sizeof(source) / sizeof(char);
@@ -95,7 +95,7 @@ void vk2d_make_tessellation_control_shader(vk2d_shader* shader, const char* tesc
     VkDevice device = volkGetLoadedDevice();
 
     VkShaderModuleCreateInfo createInfo;
-    memset(&createInfo, 0, sizeof(VkShaderModuleCreateInfo));
+    vk2d_zero_memory(createInfo, sizeof(VkShaderModuleCreateInfo));
 
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = sizeof(source) / sizeof(char);
@@ -112,7 +112,7 @@ void vk2d_make_tessellation_evaluation_shader(vk2d_shader* shader, const char* t
     VkDevice device = volkGetLoadedDevice();
 
     VkShaderModuleCreateInfo createInfo;
-    memset(&createInfo, 0, sizeof(VkShaderModuleCreateInfo));
+    vk2d_zero_memory(createInfo, sizeof(VkShaderModuleCreateInfo));
 
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = sizeof(source) / sizeof(char);
@@ -139,5 +139,5 @@ void vk2d_free_shader(vk2d_shader* shader)
     if (shader->tessellation_evaluation_shader != VK_NULL_HANDLE)
         vkDestroyShaderModule(device, shader->tessellation_evaluation_shader, NULL);
 
-    free(shader);
+    vk2d_free(shader);
 }

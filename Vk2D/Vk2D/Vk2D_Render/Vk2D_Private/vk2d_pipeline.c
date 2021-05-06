@@ -9,14 +9,14 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, 
     vk2d_pipeline* result = malloc(sizeof(vk2d_pipeline));
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo;
-    memset(&vertShaderStageInfo, 0, sizeof(VkPipelineShaderStageCreateInfo));
+    vk2d_zero_memory(vertShaderStageInfo, sizeof(VkPipelineShaderStageCreateInfo));
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
     vertShaderStageInfo.module = shader->vertex_shader;
     vertShaderStageInfo.pName = "main";
 
     VkPipelineShaderStageCreateInfo fragShaderStageInfo;
-    memset(&fragShaderStageInfo, 0, sizeof(VkPipelineShaderStageCreateInfo));
+    vk2d_zero_memory(fragShaderStageInfo, sizeof(VkPipelineShaderStageCreateInfo));
     fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
     fragShaderStageInfo.module = shader->fragment_shader;
@@ -27,13 +27,13 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, 
     VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo;
-    memset(&vertexInputInfo, 0, sizeof(VkPipelineVertexInputStateCreateInfo));
+    vk2d_zero_memory(vertexInputInfo, sizeof(VkPipelineVertexInputStateCreateInfo));
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 0;
     vertexInputInfo.vertexAttributeDescriptionCount = 0;
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly;
-    memset(&inputAssembly, 0, sizeof(VkPipelineInputAssemblyStateCreateInfo));
+    vk2d_zero_memory(inputAssembly, sizeof(VkPipelineInputAssemblyStateCreateInfo));
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     inputAssembly.primitiveRestartEnable = VK_FALSE;
@@ -59,7 +59,7 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, 
     scissor.extent = extent;
 
     VkPipelineViewportStateCreateInfo viewportState;
-    memset(&viewportState, 0, sizeof(VkPipelineViewportStateCreateInfo));
+    vk2d_zero_memory(viewportState, sizeof(VkPipelineViewportStateCreateInfo));
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
     viewportState.viewportCount = 1;
     viewportState.pViewports = &viewport;
@@ -69,7 +69,7 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, 
     // TODO: Multiple fill modes
 
     VkPipelineRasterizationStateCreateInfo rasterizer;
-    memset(&rasterizer, 0, sizeof(VkPipelineRasterizationStateCreateInfo));
+    vk2d_zero_memory(rasterizer, sizeof(VkPipelineRasterizationStateCreateInfo));
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizer.depthClampEnable = VK_FALSE;
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
@@ -80,18 +80,18 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, 
     rasterizer.depthBiasEnable = VK_FALSE;
 
     VkPipelineMultisampleStateCreateInfo multisampling;
-    memset(&multisampling, 0, sizeof(VkPipelineMultisampleStateCreateInfo));
+    vk2d_zero_memory(multisampling, sizeof(VkPipelineMultisampleStateCreateInfo));
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampling.sampleShadingEnable = VK_FALSE;
     multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment;
-    memset(&colorBlendAttachment, 0, sizeof(VkPipelineColorBlendAttachmentState));
+    vk2d_zero_memory(colorBlendAttachment, sizeof(VkPipelineColorBlendAttachmentState));
     colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     colorBlendAttachment.blendEnable = VK_FALSE;
 
     VkPipelineColorBlendStateCreateInfo colorBlending;
-    memset(&colorBlending, 0, sizeof(VkPipelineColorBlendStateCreateInfo));
+    vk2d_zero_memory(colorBlending, sizeof(VkPipelineColorBlendStateCreateInfo));
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     colorBlending.logicOpEnable = VK_FALSE;
     colorBlending.logicOp = VK_LOGIC_OP_COPY;
@@ -103,7 +103,7 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, 
     colorBlending.blendConstants[3] = 0.0f;
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo;
-    memset(&pipelineLayoutInfo, 0, sizeof(VkPipelineLayoutCreateInfo));
+    vk2d_zero_memory(pipelineLayoutInfo, sizeof(VkPipelineLayoutCreateInfo));
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 0;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
@@ -115,7 +115,7 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, 
     }
 
     VkGraphicsPipelineCreateInfo pipelineInfo;
-    memset(&pipelineInfo, 0, sizeof(VkGraphicsPipelineCreateInfo));
+    vk2d_zero_memory(pipelineInfo, sizeof(VkGraphicsPipelineCreateInfo));
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.stageCount = 2;
     pipelineInfo.pStages = shaderStages;
@@ -147,5 +147,5 @@ void vk2d_free_pipeline(vk2d_pipeline* pipeline)
 
     vkDestroyPipelineLayout(device, pipeline->pipeline_layout, NULL);
     
-    free(pipeline);
+    vk2d_free(pipeline);
 }

@@ -48,7 +48,7 @@ u32* vk2d_read_spirv(const char* path, u32* psize)
     u32 filesizepadded = (
 			size % 4 == 0 ? size * 4 : (size + 1) * 4) / 4;
 
-    buffer = malloc(filesizepadded);
+    vk2d_new(buffer, filesizepadded);
     if (!buffer)
     {
         fclose(fp);
