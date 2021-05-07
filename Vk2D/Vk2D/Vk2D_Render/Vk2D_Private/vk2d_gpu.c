@@ -5,7 +5,7 @@
 #include "vk2d_renderer_data.h"
 #include <Vk2D/Vk2D_Base/vk2d_log.h>
 #include <stdio.h>
-#include <Vk2D/Vk2D_Render/vk2d_renderer_core.h>
+#include <Vk2D/Vk2D_Render/vk2d_renderer.h>
 
 vk2d_queue_family_indices vk2d_find_queue_families(VkPhysicalDevice device, VkSurfaceKHR surface)
 {

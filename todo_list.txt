@@ -1,0 +1,6 @@
+TODO: PUSH CONSTANTS
+    - Transform + Descriptor sets
+TODO: TEXTURES
+    - stb_image
+TODO: BATCH RENDERER
+    - Dynamic geometry

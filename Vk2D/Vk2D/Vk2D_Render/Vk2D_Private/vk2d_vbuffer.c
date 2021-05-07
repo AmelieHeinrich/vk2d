@@ -164,14 +164,52 @@ vk2d_vbuffer* vk2d_create_vbuffer(vk2d_gpu* gpu, vk2d_device* device, vk2d_comma
     return result;
 }
 
-void vk2d_set_vbuffer_data(vk2d_vbuffer* buffer, i32 listSize, void* vertices)
+vk2d_vbuffer* vk2d_create_vbuffer_empty(vk2d_gpu* gpu, vk2d_device* device, vk2d_command* command, i32 listSize)
 {
+    vk2d_new(vk2d_vbuffer* result, sizeof(vk2d_vbuffer));
+
+    VkDeviceSize bufferSize = listSize * sizeof(vk2d_vertex);
+
+    VkBufferCreateInfo bufferInfo;
+    vk2d_zero_memory(bufferInfo, sizeof(VkBufferCreateInfo));
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = bufferSize;
+    bufferInfo.usage =  VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    if (vkCreateBuffer(device->device, &bufferInfo, NULL, &result->buffer) != VK_SUCCESS) {
+        vk2d_log_fatal("Vk2D Renderer", "Failed to create buffer!");
+    }
+
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(device->device, result->buffer, &memRequirements);
+
+    VkMemoryAllocateInfo allocInfo;
+    vk2d_zero_memory(allocInfo, sizeof(VkMemoryAllocateInfo));
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = vk2d_find_memory_type(gpu, memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
+    if (vkAllocateMemory(device->device, &allocInfo, NULL, &result->buffer_memory) != VK_SUCCESS) {
+        vk2d_log_fatal("Vk2D Renderer", "Failed to allocate buffer memory!");
+    }
+
+    vkBindBufferMemory(device->device, result->buffer, result->buffer_memory, 0);
+
+    vk2d_assert(result->buffer != VK_NULL_HANDLE);
+
+    result->vertex_count = listSize;
+
+    return result;
+}
+
+void vk2d_set_vbuffer_data(VkCommandBuffer cbuf, vk2d_vbuffer* buffer, i32 listSize, void* vertices)
+{
+    vk2d_assert(buffer != VK_NULL_HANDLE);
+
     VkDevice device = volkGetLoadedDevice();
 
-    void* data;
-    vkMapMemory(device, buffer->buffer_memory, 0, listSize * sizeof(vk2d_vertex), 0, &data);
-    memcpy(data, vertices, (size_t)(listSize * sizeof(vk2d_vertex)));
-    vkUnmapMemory(device, buffer->buffer_memory);
+    vkCmdUpdateBuffer(cbuf, buffer->buffer, 0, listSize, vertices);
 }
 
 void vk2d_free_vbuffer(vk2d_vbuffer* buffer)

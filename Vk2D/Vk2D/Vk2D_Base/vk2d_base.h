@@ -2,14 +2,15 @@
 #define VK2D_BASE_H
 
 #include <Vk2D/Vk2D_Base/vk2d_mem.h>
+#include <stdint.h>
 
 // typedefs
-typedef char i8;
-typedef unsigned char u8;
-typedef short i16;
-typedef unsigned short u16;
-typedef int i32;
-typedef unsigned int u32;
+typedef int8_t i8;
+typedef uint8_t u8;
+typedef int16_t i16;
+typedef uint16_t u16;
+typedef int32_t i32;
+typedef uint32_t u32;
 typedef float f32;
 typedef double d32;
 

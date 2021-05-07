@@ -15,11 +15,12 @@ vk2d_mat4 vk2d_mat4_identity();
 vk2d_mat4 vk2d_mat4_diagonal(f32 diagonal);
 
 vk2d_mat4 vk2d_mat4_multiply(vk2d_mat4 left, vk2d_mat4 right);
+vk2d_vec3 vk2d_mat4_multiply_v3(vk2d_mat4 left, vk2d_vec3 right);
 
 // Transform stuff
 vk2d_mat4 vk2d_mat4_translate(vk2d_vec3 vector);
 vk2d_mat4 vk2d_mat4_scale(vk2d_vec3 vector);
-vk2d_mat4 vk2d_mat4_rotate(vk2d_vec3 vector);
+vk2d_mat4 vk2d_mat4_rotate(vk2d_vec3 vector, f32 angle);
 
 // Camera stuff
 vk2d_mat4 vk2d_mat4_orthographic(f32 left, f32 right, f32 bottom, f32 top, f32 near, f32 far);

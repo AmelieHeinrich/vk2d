@@ -10,7 +10,7 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
@@ -31,5 +31,4 @@ link_libraries(example_app Vk2D)
 
 target_include_directories(Vk2D PUBLIC "ext/glfw/include")
 target_include_directories(Vk2D PUBLIC "ext/volk")
-target_include_directories(Vk2D PUBLIC "ext/glslang/SPIRV" "ext/glslang/glslang/Public")
 target_include_directories(example_app PUBLIC "Vk2D")

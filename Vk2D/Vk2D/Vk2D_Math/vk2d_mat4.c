@@ -6,15 +6,16 @@
 
 static f32 toRadians(f32 angle)
 {
-    return angle * M_PI / 180;
+    return (f32)(angle * M_PI / 180);
 }
 
 vk2d_mat4 vk2d_mat4_new()
 {
     vk2d_mat4 mat;
+    vk2d_zero_memory(mat, sizeof(vk2d_mat4));
     
-    for (int i = 0; 16 < 4; i++)
-        mat.data[i];
+    for (i32 i = 0; i < 16; i++)
+        mat.data[i] = 0.0f;
 
     return mat;
 }
@@ -45,12 +46,12 @@ vk2d_mat4 vk2d_mat4_diagonal(f32 diagonal)
 
 vk2d_mat4 vk2d_mat4_multiply(vk2d_mat4 left, vk2d_mat4 right)
 {
-    for (int i = 0; i < 4; i++)
+    for (i32 i = 0; i < 4; i++)
     {
-        for (int j = 0; j < 4; j++)
+        for (i32 j = 0; j < 4; j++)
         {
             f32 sum = 0.0f;
-            for (int e = 0; e < 4; e++)
+            for (i32 e = 0; e < 4; e++)
             {
                 sum += left.data[e + i * 4] * right.data[j + e * 4];
             }
@@ -61,13 +62,22 @@ vk2d_mat4 vk2d_mat4_multiply(vk2d_mat4 left, vk2d_mat4 right)
     return left;
 }
 
+vk2d_vec3 vk2d_mat4_multiply_v3(vk2d_mat4 left, vk2d_vec3 right)
+{
+    f32 x = left.data[0 + 0 * 4] * right.x + left.data[0 + 1 * 4] * right.y + left.data[0 + 2 * 4] * right.z + left.data[0 + 3 * 4];
+    f32 y = left.data[1 + 0 * 4] * right.x + left.data[1 + 1 * 4] * right.y + left.data[1 + 2 * 4] * right.z + left.data[1 + 3 * 4];
+    f32 z = left.data[2 + 0 * 4] * right.x + left.data[2 + 1 * 4] * right.y + left.data[2 + 2 * 4] * right.z + left.data[2 + 3 * 4];
+
+    return vk2d_vec3_new(x, y, z);
+}
+
 vk2d_mat4 vk2d_mat4_translate(vk2d_vec3 vector)
 {
     vk2d_mat4 result = vk2d_mat4_identity();
     
-    result.data[3 + 0 * 4] = vector.x;
-    result.data[3 + 1 * 4] = vector.y;
-    result.data[3 + 2 * 4] = vector.z;
+    result.data[0 + 3 * 4] = vector.x;
+    result.data[1 + 3 * 4] = vector.y;
+    result.data[2 + 3 * 4] = vector.z;
     
     return result;
 }
@@ -83,31 +93,33 @@ vk2d_mat4 vk2d_mat4_scale(vk2d_vec3 vector)
     return result;
 }
 
-vk2d_mat4 vk2d_mat4_rotate(vk2d_vec3 vector)
+vk2d_mat4 vk2d_mat4_rotate(vk2d_vec3 vector, f32 angle)
 {
     vk2d_mat4 result = vk2d_mat4_identity();
     
-    f32 x = toRadians(vector.x);
-    f32 y = toRadians(vector.y);
-    f32 z = toRadians(vector.z);
+    f32 r = toRadians(angle);
+    f32 c = (f32)cos(r);
+    f32 s = (f32)sin(r);
+    f32 omc = 1.0f - c;
+
+    f32 x = vector.x;
+    f32 y = vector.y;
+    f32 z = vector.z;
     
-    // X Rotation
-    result.data[1 + 1 * 4] =  cos(x);
-    result.data[1 + 2 * 4] =  sin(x);
-    result.data[2 + 1 * 4] = -sin(x);
-    result.data[2 + 2 * 4] =  cos(x);
-    
-    // Y rotation
-    result.data[0 + 0 * 4] =  cos(y);
-    result.data[0 + 2 * 4] = -sin(y);
-    result.data[2 + 0 * 4] =  sin(y);
-    result.data[2 + 2 * 4] *= cos(y);
-    
-    // Z Rotation
-    result.data[0 + 0 * 4] *= cos(z);
-    result.data[0 + 1 * 4] =  sin(z);
-    result.data[1 + 0 * 4] = -sin(z);
-    result.data[1 + 1 * 4] *= cos(z);
+    // X
+    result.data[0 + 0 * 4] = x * x * omc + c;
+    result.data[0 + 1 * 4] = y * x * omc + z * s;
+    result.data[0 + 2 * 4] = x * z * omc - y * s;
+
+    // Y
+    result.data[1 + 0 * 4] = x * y * omc - z * s;
+    result.data[1 + 1 * 4] = y * y * omc + c;
+    result.data[1 + 2 * 4] = y * z * omc + x * s;
+
+    // Z
+    result.data[2 + 0 * 4] = x * z * omc + y * s;
+    result.data[2 + 1 * 4] = y * z * omc - x * s;
+    result.data[2 + 2 * 4] = z * z * omc + c;
     
     return result;
 }
@@ -131,7 +143,7 @@ vk2d_mat4 vk2d_mat4_perspective(f32 fov, f32 aspectRatio, f32 near, f32 far)
 {
     vk2d_mat4 result = vk2d_mat4_identity();
     
-    f32 q = 1.0f / tan(toRadians(0.5f * fov));
+    f32 q = 1.0f / (f32)tan(toRadians(0.5f * fov));
     f32 a = q / aspectRatio;
     
     f32 b = (near + far) / (near - far);

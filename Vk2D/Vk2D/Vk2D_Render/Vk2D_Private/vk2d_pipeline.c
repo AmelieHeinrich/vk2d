@@ -108,11 +108,18 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, 
     colorBlending.blendConstants[2] = 0.0f;
     colorBlending.blendConstants[3] = 0.0f;
 
+    VkPushConstantRange range;
+    vk2d_zero_memory(range, sizeof(VkPushConstantRange));
+    range.offset = 0;
+    range.size = sizeof(vk2d_scene_uniforms);
+    range.stageFlags = VK_SHADER_STAGE_ALL;
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo;
     vk2d_zero_memory(pipelineLayoutInfo, sizeof(VkPipelineLayoutCreateInfo));
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 0;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
+    pipelineLayoutInfo.pushConstantRangeCount = 1;
+    pipelineLayoutInfo.pPushConstantRanges = &range;
 
     VkDevice device = volkGetLoadedDevice();
     {

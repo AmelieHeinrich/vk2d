@@ -26,7 +26,13 @@ int main()
     {
         vk2d_window_update(window);
 
-        vk2d_debug_draw();
+        vk2d_mat4 projection = vk2d_mat4_identity();
+        vk2d_mat4 view = vk2d_mat4_identity();
+        vk2d_mat4 test_sprite = vk2d_mat4_translate(vk2d_vec3_new(0.5f, 0.0f, 0.0f));
+
+        vk2d_renderer_begin_scene(projection, view);
+        vk2d_renderer_draw_quad_mat4(test_sprite, vk2d_vec4_new(0.8f, 0.2f, 0.3f, 1.0f));
+        vk2d_renderer_end_scene();
     }
 
     vk2d_shutdown_renderer();

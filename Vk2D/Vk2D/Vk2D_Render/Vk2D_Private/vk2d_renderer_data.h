@@ -4,6 +4,8 @@
 #include <vulkan/vulkan.h>
 #include <volk.h>
 
+#include <Vk2D/Vk2D_Math/vk2d_mat4.h>
+
 #include <Vk2D/Vk2D_Base/vk2d_base.h>
 #include <Vk2D/Vk2D_Render/Vk2D_Private/vk2d_instance_data.h>
 #include <Vk2D/Vk2D_Render/Vk2D_Private/vk2d_gpu.h>
@@ -31,6 +33,13 @@ struct vk2d_renderer_data
     VkSemaphore image_available_semaphore;
     VkSemaphore render_finished_semaphore;
     VkFence fence;
+};
+
+typedef struct vk2d_scene_uniforms vk2d_scene_uniforms;
+struct vk2d_scene_uniforms
+{
+    vk2d_mat4 view;
+    vk2d_mat4 projection;
 };
 
 static vk2d_renderer_data* _data;

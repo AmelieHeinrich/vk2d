@@ -63,7 +63,7 @@ vk2d_vec2 vk2d_vec2_div_scalar(vk2d_vec2 left, f32 right)
 
 f32 vk2d_vec2_magnitude(vk2d_vec2 vec)
 {
-    return sqrt(vec.x * vec.x + vec.y * vec.y);
+    return (f32)sqrt(vec.x * vec.x + vec.y * vec.y);
 }  
 
 vk2d_vec2 vk2d_vec2_normalise(vk2d_vec2 vec)
@@ -77,7 +77,7 @@ f32 vk2d_vec2_distance(vk2d_vec2 left, vk2d_vec2 right)
     f32 a = left.x - right.x;
     f32 b = left.y - right.y;
 
-    return sqrt(a * a + b * b);
+    return (f32)sqrt(a * a + b * b);
 }
 
 f32 vk2d_vec2_dot(vk2d_vec2 left, vk2d_vec2 right)

@@ -21,7 +21,7 @@ static vk2d_event_type event_table[EVENT_TABLE_SIZE] = {0};
 
 static i32 hash(const char* name)
 {
-    i32 len = strnlen(name, EVENT_NAME_MAX);
+    size_t len = strnlen(name, EVENT_NAME_MAX);
     u32 val = 0;
 
     for (i32 i = 0; i < len; i++)

@@ -31,7 +31,8 @@ VkVertexInputAttributeDescription* vk2d_get_attribute_descriptions();
 
 // The actual vertex buffer code
 vk2d_vbuffer* vk2d_create_vbuffer(vk2d_gpu* gpu, vk2d_device* device, vk2d_command* command, i32 listSize, void* vertices);
+vk2d_vbuffer* vk2d_create_vbuffer_empty(vk2d_gpu* gpu, vk2d_device* device, vk2d_command* command, i32 listSize);
 void vk2d_free_vbuffer(vk2d_vbuffer* buffer);
-void vk2d_set_vbuffer_data(vk2d_vbuffer* buffer, i32 listSize, void* vertices);
+void vk2d_set_vbuffer_data(VkCommandBuffer cbuf, vk2d_vbuffer* buffer, i32 listSize, void* vertices);
 
 #endif

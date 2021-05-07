@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <GLFW/glfw3.h>
 #include <Vk2D/Vk2D_Base/vk2d_log.h>
-#include <Vk2D/Vk2D_Render/vk2d_renderer_core.h>
+#include <Vk2D/Vk2D_Render/vk2d_renderer.h>
 #include <Vk2D/Vk2D_Base/vk2d_event.h>
 
 static void close_callback(struct GLFWwindow* win)

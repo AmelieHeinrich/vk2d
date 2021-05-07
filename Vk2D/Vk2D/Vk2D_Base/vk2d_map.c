@@ -41,7 +41,7 @@ void vk2d_map_set(vk2d_map* map, const char* key, void* value)
         char* k = calloc(sizeof(char), strlen(key) + 1);
 		void* v = calloc(map->size, 1);
 
-        strcpy(k, key);
+        strcpy_s(k, sizeof(key), key);
 		memcpy(v, value, map->size);
 
         item->key = k;
@@ -67,7 +67,7 @@ void vk2d_map_set(vk2d_map* map, const char* key, void* value)
     new_item = calloc(sizeof(vk2d_map_item), 1);
 	new_item->key = calloc(sizeof(char), strlen(key) + 1);
 	new_item->value = calloc(map->size, 1);
-	strcpy(new_item->key, key);
+	strcpy_s(new_item->key, sizeof(key), key);
 	memcpy(new_item->value, value, map->size);
 	item->next = new_item;
 }

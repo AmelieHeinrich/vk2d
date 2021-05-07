@@ -18,6 +18,6 @@
 #include <Vk2D/Vk2D_Window/vk2d_window.h>
 
 // Renderer
-#include <Vk2D/Vk2D_Render/vk2d_renderer_core.h>
+#include <Vk2D/Vk2D_Render/vk2d_renderer.h>
 
 #endif
