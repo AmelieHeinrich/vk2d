@@ -1,0 +1,17 @@
+#ifndef VK2D_BUTTON
+#define VK2D_BUTTON
+
+#define VK2D_MOUSE_BUTTON_1         0
+#define VK2D_MOUSE_BUTTON_2         1
+#define VK2D_MOUSE_BUTTON_3         2
+#define VK2D_MOUSE_BUTTON_4         3
+#define VK2D_MOUSE_BUTTON_5         4
+#define VK2D_MOUSE_BUTTON_6         5
+#define VK2D_MOUSE_BUTTON_7         6
+#define VK2D_MOUSE_BUTTON_8         7
+#define VK2D_MOUSE_BUTTON_LAST      VK2D_MOUSE_BUTTON_8
+#define VK2D_MOUSE_BUTTON_LEFT      VK2D_MOUSE_BUTTON_1
+#define VK2D_MOUSE_BUTTON_RIGHT     VK2D_MOUSE_BUTTON_2
+#define VK2D_MOUSE_BUTTON_MIDDLE    VK2D_MOUSE_BUTTON_3
+
+#endif

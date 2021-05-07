@@ -17,7 +17,13 @@
 // Window
 #include <Vk2D/Vk2D_Window/vk2d_window.h>
 
+// Input
+#include <Vk2D/Vk2D_Input/vk2d_keycode.h>
+#include <Vk2D/Vk2D_Input/vk2d_button.h>
+#include <Vk2D/Vk2D_Input/vk2d_input_system.h>
+
 // Renderer
 #include <Vk2D/Vk2D_Render/vk2d_renderer.h>
+#include <Vk2D/Vk2D_Render/vk2d_sprite.h>
 
 #endif
