@@ -27,9 +27,11 @@ ELSE()
 ENDIF()
 
 include_directories(${Vulkan_INCLUDE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ext/stb_image)
 
 add_definitions(-DVK_NO_PROTOTYPES)
 add_definitions(-DGLFW_INCLUDE_NONE)
+add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
 add_library(Vk2D ${VK2D_HEADER} ${VK2D_SOURCE})
 target_link_libraries(Vk2D PUBLIC glfw)

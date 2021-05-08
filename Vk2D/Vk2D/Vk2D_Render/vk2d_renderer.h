@@ -32,6 +32,7 @@ void vk2d_renderer_begin_scene(vk2d_mat4 projection, vk2d_mat4 view);
 void vk2d_renderer_draw_quad_mat4(vk2d_mat4 transform, vk2d_vec4 color);
 void vk2d_renderer_draw_quad(vk2d_vec3 position, vk2d_vec3 scale, vk2d_vec3 rotation, f32 angle, vk2d_vec4 color);
 void vk2d_renderer_end_scene();
+void vk2d_renderer_draw();
 
 static i32 _debug_enabled;
 

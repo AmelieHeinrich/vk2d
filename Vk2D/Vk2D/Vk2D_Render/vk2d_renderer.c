@@ -36,6 +36,8 @@ struct vk2d_batch_data
 
     vk2d_vec3 quad_vertex_positions[4];
     vk2d_scene_uniforms uniforms;
+
+    u32 image_index;
 };
 
 static vk2d_batch_data* batch_data;
@@ -338,6 +340,7 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
 void vk2d_renderer_begin_scene(vk2d_mat4 projection, vk2d_mat4 view)
 {
     batch_data->uniforms.projection = projection;
+    batch_data->uniforms.projection.data[1 + 1 * 4] *= -1;
     batch_data->uniforms.view = view;
 
     batch_data->quad_index_count = 0;
@@ -348,8 +351,7 @@ void vk2d_renderer_end_scene()
 {
     vkWaitForFences(_data->logical_device->device, 1, &_data->fence, VK_TRUE, 1000000000);
 
-    u32 imageIndex;
-    VkResult img = vkAcquireNextImageKHR(_data->logical_device->device, _data->swap_chain->handle, 1000000000, _data->image_available_semaphore, VK_NULL_HANDLE, &imageIndex);
+    VkResult img = vkAcquireNextImageKHR(_data->logical_device->device, _data->swap_chain->handle, 1000000000, _data->image_available_semaphore, VK_NULL_HANDLE, &batch_data->image_index);
 
     for (int i = 0; i < 2; i++)
     {
@@ -384,7 +386,7 @@ void vk2d_renderer_end_scene()
         vk2d_zero_memory(renderPassInfo, sizeof(VkRenderPassBeginInfo))
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = _data->sprite_renderpass->render_pass;
-		renderPassInfo.framebuffer = _data->swap_chain->swap_chain_framebuffers[imageIndex];
+		renderPassInfo.framebuffer = _data->swap_chain->swap_chain_framebuffers[batch_data->image_index];
 		renderPassInfo.renderArea.offset = offset;
 		renderPassInfo.renderArea.extent = _data->swap_chain->swap_chain_extent;
 		renderPassInfo.clearValueCount = 1;
@@ -415,7 +417,10 @@ void vk2d_renderer_end_scene()
 
         vk2d_assert(vkEndCommandBuffer(cbuf) == VK_SUCCESS);
     }
+}
 
+void vk2d_renderer_draw()
+{
     VkSubmitInfo submitInfo;
     vk2d_zero_memory(submitInfo, sizeof(VkSubmitInfo));
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -447,7 +452,7 @@ void vk2d_renderer_end_scene()
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
 
-	presentInfo.pImageIndices = &imageIndex;
+	presentInfo.pImageIndices = &batch_data->image_index;
 
 	vkQueuePresentKHR(_data->logical_device->present_queue, &presentInfo);
 }
@@ -461,7 +466,7 @@ void vk2d_renderer_resize(u32 width, u32 height)
     vk2d_free_pipeline(_data->sprite_pipeline);
     vk2d_free_renderpass(_data->sprite_renderpass);
     
-     // SWAPCHAIN
+    // SWAPCHAIN
     {
         _data->swap_chain = vk2d_create_swapchain(_data->physical_device, _data->surface, width, height, 2);
     }
@@ -511,6 +516,13 @@ void vk2d_renderer_resize(u32 width, u32 height)
 
 void vk2d_renderer_draw_quad_mat4(vk2d_mat4 transform, vk2d_vec4 color)
 {
+    if (batch_data->quad_index_count >= max_indices)
+    {
+        vk2d_renderer_end_scene();
+        batch_data->quad_index_count = 0;
+	    batch_data->quad_vertex_buffer_ptr = batch_data->quad_vertex_buffer_base;
+    }
+
     size_t quadVertexCount = 4;
     vk2d_vec2 texture_coords[] = {
         vk2d_vec2_new(0.0f, 0.0f), vk2d_vec2_new(1.0f, 0.0f), vk2d_vec2_new(1.0f, 1.0f), vk2d_vec2_new(0.0f, 1.0f)
@@ -538,22 +550,7 @@ void vk2d_renderer_draw_quad(vk2d_vec3 position, vk2d_vec3 scale, vk2d_vec3 rota
     transform = vk2d_mat4_multiply(transform, scale_mat);
     transform = vk2d_mat4_multiply(transform, rotation_mat);
 
-    size_t quadVertexCount = 4;
-    vk2d_vec2 texture_coords[] = {
-        vk2d_vec2_new(0.0f, 0.0f), vk2d_vec2_new(1.0f, 0.0f), vk2d_vec2_new(1.0f, 1.0f), vk2d_vec2_new(0.0f, 1.0f)
-    };
-    i32 tex_index = 0;
-
-    for (size_t i = 0; i < quadVertexCount; i++)
-    {
-        batch_data->quad_vertex_buffer_ptr->position = vk2d_mat4_multiply_v3(transform, batch_data->quad_vertex_positions[i]);
-        batch_data->quad_vertex_buffer_ptr->color = vk2d_vec4_new(0.2f, 0.3f, 0.8f, 1.0f);
-        batch_data->quad_vertex_buffer_ptr->tex_coords = texture_coords[i];
-        batch_data->quad_vertex_buffer_ptr->tex_index = tex_index;
-        batch_data->quad_vertex_buffer_ptr++;
-    }
-
-    batch_data->quad_index_count += 6;
+    vk2d_renderer_draw_quad_mat4(transform, color);
 }
 
 void vk2d_shutdown_renderer()

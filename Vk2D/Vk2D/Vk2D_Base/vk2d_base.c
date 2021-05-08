@@ -31,6 +31,8 @@ i32 vk2d_init(vk2d_init_flags flags)
         result = glfwInit();
         return result;
     }
+
+    return 0;
 }
 
 void vk2d_quit()

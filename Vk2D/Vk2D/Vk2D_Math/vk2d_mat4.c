@@ -46,20 +46,21 @@ vk2d_mat4 vk2d_mat4_diagonal(f32 diagonal)
 
 vk2d_mat4 vk2d_mat4_multiply(vk2d_mat4 left, vk2d_mat4 right)
 {
-    for (i32 i = 0; i < 4; i++)
-    {
-        for (i32 j = 0; j < 4; j++)
-        {
-            f32 sum = 0.0f;
-            for (i32 e = 0; e < 4; e++)
-            {
-                sum += left.data[e + i * 4] * right.data[j + e * 4];
-            }
-            left.data[i + j * 4] = sum;
-        }
-    }
-    
-    return left;
+    float data[16];
+	for (i32 row = 0; row < 4; row++)
+	{
+		for (i32 col = 0; col < 4; col++)
+		{
+			float sum = 0.0f;
+			for (i32 e = 0; e < 4; e++)
+			{
+				sum += left.data[e + row * 4] * right.data[col + e * 4];
+			}
+			data[col + row * 4] = sum;
+		}
+	}
+	memcpy(left.data, data, 4 * 4 * sizeof(float));
+	return left;
 }
 
 vk2d_vec3 vk2d_mat4_multiply_v3(vk2d_mat4 left, vk2d_vec3 right)

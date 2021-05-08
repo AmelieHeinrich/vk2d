@@ -19,7 +19,8 @@ struct vk2d_ibuffer
 
 // The actual vertex buffer code
 vk2d_ibuffer* vk2d_create_ibuffer(vk2d_gpu* gpu, vk2d_device* device, vk2d_command* command, i32 listSize, void* vertices);
+vk2d_ibuffer* vk2d_create_ibuffer_empty(vk2d_gpu* gpu, vk2d_device* device, vk2d_command* command, i32 listSize);
 void vk2d_free_ibuffer(vk2d_ibuffer* buffer);
-void vk2d_set_ibuffer_data(vk2d_ibuffer* buffer, i32 listSize, void* vertices);
+void vk2d_set_ibuffer_data(VkCommandBuffer cbuf, vk2d_ibuffer* buffer, i32 listSize, void* vertices);
 
 #endif
