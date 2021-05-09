@@ -17,6 +17,7 @@
 #include <GLFW/glfw3native.h>
 
 #include <Vk2D/Vk2D_Render/Vk2D_Private/vk2d_renderer_data.h>
+#include <Vk2D/Vk2D_Render/Vk2D_Private/vk2d_texture_handler.h>
 
 #define max_quads 20000
 
@@ -551,6 +552,22 @@ void vk2d_renderer_draw_quad(vk2d_vec3 position, vk2d_vec3 scale, vk2d_vec3 rota
     transform = vk2d_mat4_multiply(transform, rotation_mat);
 
     vk2d_renderer_draw_quad_mat4(transform, color);
+}
+
+vk2d_texture* vk2d_texture_init_from_file(const char* path)
+{
+    vk2d_new(vk2d_texture* result, sizeof(vk2d_texture));
+    result->private_handler = vk2d_init_texture_handler(_data->physical_device, _data->logical_device, _data->render_command, path);
+    result->width = result->private_handler->width;
+    result->height = result->private_handler->height;
+    result->path = path;
+    return result;
+}
+
+void vk2d_texture_free(vk2d_texture* texture)
+{
+    vk2d_free_texture_handler(_data->logical_device, texture->private_handler);
+    vk2d_free(texture);
 }
 
 void vk2d_shutdown_renderer()

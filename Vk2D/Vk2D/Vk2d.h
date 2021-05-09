@@ -24,6 +24,7 @@
 
 // Renderer
 #include <Vk2D/Vk2D_Render/vk2d_renderer.h>
+#include <Vk2D/Vk2D_Render/vk2d_texture.h>
 #include <Vk2D/Vk2D_Render/vk2d_sprite.h>
 
 #endif
