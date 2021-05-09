@@ -30,13 +30,19 @@ void vk2d_shutdown_renderer();
 void vk2d_renderer_resize(u32 width, u32 height);
 
 void vk2d_renderer_begin_scene(vk2d_mat4 projection, vk2d_mat4 view);
+
 void vk2d_renderer_draw_quad_mat4(vk2d_mat4 transform, vk2d_vec4 color);
 void vk2d_renderer_draw_quad(vk2d_vec3 position, vk2d_vec3 scale, vk2d_vec3 rotation, f32 angle, vk2d_vec4 color);
+void vk2d_renderer_draw_textured_quad_mat4(vk2d_mat4 transform, vk2d_texture* texture, vk2d_vec4 color);
+void vk2d_renderer_draw_textured_quad(vk2d_vec3 position, vk2d_vec3 scale, vk2d_vec3 rotation, f32 angle, vk2d_texture* texture, vk2d_vec4 color);
+
+
 void vk2d_renderer_end_scene();
 void vk2d_renderer_draw();
 
 // Asset managing
 vk2d_texture* vk2d_texture_init_from_file(const char* path);
+vk2d_texture* vk2d_texture_init_from_raw_data(void* data);
 void vk2d_texture_free(vk2d_texture* texture);
 
 static i32 _debug_enabled;

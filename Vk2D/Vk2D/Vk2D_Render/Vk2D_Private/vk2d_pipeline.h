@@ -15,7 +15,7 @@ struct vk2d_pipeline
     u32 height; // The pipeline height
 };
 
-vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, vk2d_renderpass* renderpass);
+vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, vk2d_renderpass* renderpass, VkDescriptorSetLayout descriptor);
 void vk2d_free_pipeline(vk2d_pipeline* pipeline);
 
 #endif

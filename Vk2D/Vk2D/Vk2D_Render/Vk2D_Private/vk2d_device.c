@@ -40,8 +40,8 @@ void vk2d_init_device(vk2d_device* dst, vk2d_instance_data data, VkPhysicalDevic
     create_info.pEnabledFeatures = &features;
     create_info.enabledExtensionCount = 1;
     create_info.ppEnabledExtensionNames = (const char *const *)extensions;
-    create_info.enabledLayerCount = data.enable_layer_count;
-    create_info.ppEnabledLayerNames = (const char *const *)data.enabled_layers;
+    create_info.enabledLayerCount = 0;//data.enable_layer_count;
+    create_info.ppEnabledLayerNames = NULL;//(const char *const *)data.enabled_layers;
 
     VkResult err = vkCreateDevice(gpu, &create_info, NULL, &dst->device);
     vk2d_assert(err == VK_SUCCESS);

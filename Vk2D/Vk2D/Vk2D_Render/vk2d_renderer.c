@@ -38,6 +38,16 @@ struct vk2d_batch_data
     vk2d_vec3 quad_vertex_positions[4];
     vk2d_scene_uniforms uniforms;
 
+    VkDescriptorPool batch_descriptor_pool;
+    VkDescriptorSetLayout batch_dset_layout;
+    VkDescriptorSet batch_dsets[2];
+
+    vk2d_texture* white_texture;
+
+    vk2d_texture* texture_slots[32];
+    u32 texture_slot_index;
+    i32 max_slots;
+
     u32 image_index;
 };
 
@@ -69,10 +79,11 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
     _debug_enabled = enableDebug;
     VkResult res = volkInitialize();
 
+    vk2d_new(_data, sizeof(vk2d_renderer_data));
+    vk2d_new(batch_data, sizeof(vk2d_batch_data));
+
     // CORE
     {
-        vk2d_new(_data, sizeof(vk2d_renderer_data));
-
         _data->instance_data.enable_extension_count = 0;
         _data->instance_data.enable_layer_count = 0;
 
@@ -162,10 +173,11 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
             createInfo.pNext = NULL;
             createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
             createInfo.pApplicationInfo = &appInfo;
-            createInfo.enabledLayerCount = 1;
+            
+            createInfo.enabledLayerCount = 0; //1;
             createInfo.enabledExtensionCount = _data->instance_data.enable_extension_count;
             createInfo.ppEnabledExtensionNames = (const char *const *)_data->instance_data.extension_names;
-            createInfo.ppEnabledLayerNames = (const char *const *)_data->instance_data.enabled_layers;
+            createInfo.ppEnabledLayerNames = NULL; //(const char *const *)_data->instance_data.enabled_layers;
 
             res = vkCreateInstance(&createInfo, NULL, &_data->instance_data.instance);
 
@@ -251,10 +263,72 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
             vk2d_log_info("Vk2D Debug Messenger", "Created swap chain framebuffers");
         }
 
+        // Descriptors
+        {
+            VkDescriptorPoolSize sampler_size;
+            sampler_size.type = VK_DESCRIPTOR_TYPE_SAMPLER;
+            sampler_size.descriptorCount = 1 * _data->swap_chain->num_buffers;
+
+            VkDescriptorPoolSize textures_size;
+            textures_size.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            textures_size.descriptorCount = 32 * _data->swap_chain->num_buffers;
+
+            VkDescriptorPoolSize sizes[] = { sampler_size, textures_size };
+
+            VkDescriptorPoolCreateInfo poolInfo;
+            vk2d_zero_memory(poolInfo, sizeof(VkDescriptorPoolCreateInfo));
+            poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+            poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+            poolInfo.poolSizeCount = 2;
+            poolInfo.pPoolSizes = sizes;
+            poolInfo.maxSets = 512 * _data->swap_chain->num_buffers;        
+
+            vk2d_assert(vkCreateDescriptorPool(_data->logical_device->device, &poolInfo, NULL, &batch_data->batch_descriptor_pool) == VK_SUCCESS);
+
+            VkDescriptorSetLayoutBinding samplerLayoutBinding;
+            vk2d_zero_memory(samplerLayoutBinding, sizeof(VkDescriptorSetLayoutBinding));
+            samplerLayoutBinding.binding = 0;
+            samplerLayoutBinding.descriptorCount = 1;
+            samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+            samplerLayoutBinding.pImmutableSamplers = NULL;
+            samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;   
+            
+            VkDescriptorSetLayoutBinding textureLayoutBinding;
+            vk2d_zero_memory(textureLayoutBinding, sizeof(VkDescriptorSetLayoutBinding));
+            textureLayoutBinding.binding = 1;
+            textureLayoutBinding.descriptorCount = 32;
+            textureLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            textureLayoutBinding.pImmutableSamplers = NULL;
+            textureLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;   
+
+            VkDescriptorSetLayoutBinding bindings[] = { samplerLayoutBinding, textureLayoutBinding };
+
+            VkDescriptorSetLayoutCreateInfo layoutInfo;
+            vk2d_zero_memory(layoutInfo, sizeof(VkDescriptorSetLayoutCreateInfo));
+            layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            layoutInfo.bindingCount = 2;
+            layoutInfo.pBindings = bindings;
+
+            vk2d_assert(vkCreateDescriptorSetLayout(_data->logical_device->device, &layoutInfo, NULL, &batch_data->batch_dset_layout) == VK_SUCCESS);      
+
+            VkDescriptorSetLayout layouts[2];
+            layouts[0] = batch_data->batch_dset_layout;
+            layouts[1] = batch_data->batch_dset_layout;
+
+            VkDescriptorSetAllocateInfo allocInfo;
+            vk2d_zero_memory(allocInfo, sizeof(VkDescriptorSetAllocateInfo))
+            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            allocInfo.descriptorPool = batch_data->batch_descriptor_pool;
+            allocInfo.descriptorSetCount = _data->swap_chain->num_buffers;
+            allocInfo.pSetLayouts = layouts;
+
+            vk2d_assert(vkAllocateDescriptorSets(_data->logical_device->device, &allocInfo, batch_data->batch_dsets) == VK_SUCCESS);
+        }
+
         // SPRITE PIPELINE
         {
             vk2d_shader* shader = vk2d_create_shader("vk2d_shaders/vertex.spv", "vk2d_shaders/fragment.spv");
-            _data->sprite_pipeline = vk2d_create_pipeline(shader, window->width, window->height, _data->sprite_renderpass);
+            _data->sprite_pipeline = vk2d_create_pipeline(shader, window->width, window->height, _data->sprite_renderpass, batch_data->batch_dset_layout);
             vk2d_free_shader(shader);
         }
 
@@ -299,8 +373,6 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
 
     // BATCH
     {
-        vk2d_new(batch_data, sizeof(vk2d_batch_data));
-
         batch_data->quad_vertex_buffer = vk2d_create_vbuffer_empty(_data->physical_device, _data->logical_device, _data->render_command, 
                                                              max_quads * sizeof(vk2d_vertex));
 
@@ -329,7 +401,15 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
         batch_data->quad_vertex_positions[0] = vk2d_vec3_new(-0.5f, -0.5f, 0.0f);     
         batch_data->quad_vertex_positions[1] = vk2d_vec3_new( 0.5f, -0.5f, 0.0f);   
         batch_data->quad_vertex_positions[2] = vk2d_vec3_new( 0.5f,  0.5f, 0.0f);   
-        batch_data->quad_vertex_positions[3] = vk2d_vec3_new(-0.5f,  0.5f, 0.0f);                          
+        batch_data->quad_vertex_positions[3] = vk2d_vec3_new(-0.5f,  0.5f, 0.0f);    
+
+        batch_data->max_slots = 32;
+
+        u32 white = 0xffffffff;
+        batch_data->white_texture = vk2d_texture_init_from_raw_data(&white);
+
+        batch_data->texture_slots[0] = batch_data->white_texture;
+        batch_data->texture_slot_index = 1;
     }
 
     int is_good = res == VK_SUCCESS;
@@ -346,15 +426,17 @@ void vk2d_renderer_begin_scene(vk2d_mat4 projection, vk2d_mat4 view)
 
     batch_data->quad_index_count = 0;
 	batch_data->quad_vertex_buffer_ptr = batch_data->quad_vertex_buffer_base;
+    batch_data->texture_slot_index = 1;
 }
 
 void vk2d_renderer_end_scene()
 {
-    vkWaitForFences(_data->logical_device->device, 1, &_data->fence, VK_TRUE, 1000000000);
-
     VkResult img = vkAcquireNextImageKHR(_data->logical_device->device, _data->swap_chain->handle, 1000000000, _data->image_available_semaphore, VK_NULL_HANDLE, &batch_data->image_index);
 
-    for (int i = 0; i < 2; i++)
+    vkWaitForFences(_data->logical_device->device, 1, &_data->fence, VK_TRUE, 1000000000);
+    vkResetFences(_data->logical_device->device, 1, &_data->fence);
+
+    for (int i = 0; i < _data->swap_chain->num_buffers; i++)
     {
         vkResetCommandBuffer(_data->render_command->command_buffers[i], 0);
     
@@ -402,10 +484,50 @@ void vk2d_renderer_end_scene()
         VkDeviceSize size = { 0 };
         VkBuffer buffers[] = { batch_data->quad_vertex_buffer->buffer };
 
+        for (i32 i = 0; i < _data->swap_chain->num_buffers; i++)
+        {
+            VkDescriptorImageInfo descriptorImageInfos[32];
+            vk2d_zero_memory_ptr(descriptorImageInfos, sizeof(VkDescriptorImageInfo) * 32);
+    
+            for (u32 j = 0; j < batch_data->texture_slot_index; j++)
+            {
+                if (batch_data->texture_slots[j] != NULL)
+                {
+                    descriptorImageInfos[j].sampler = batch_data->texture_slots[0]->private_handler->texture_sampler;
+                    descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    descriptorImageInfos[j].imageView = batch_data->texture_slots[j]->private_handler->texture_image_view;
+                }
+            }
+    
+            VkWriteDescriptorSet setWrites[2];
+            vk2d_zero_memory_ptr(setWrites, sizeof(VkWriteDescriptorSet) * 2)
+    
+            setWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            setWrites[0].dstBinding = 0;
+            setWrites[0].dstArrayElement = 0;
+            setWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+            setWrites[0].descriptorCount = 1;
+            setWrites[0].pBufferInfo = 0;
+            setWrites[0].dstSet = batch_data->batch_dsets[i];
+            setWrites[0].pImageInfo = &descriptorImageInfos[0];
+    
+            setWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            setWrites[1].dstBinding = 1;
+            setWrites[1].dstArrayElement = 0;
+            setWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            setWrites[1].descriptorCount = batch_data->texture_slot_index;
+            setWrites[1].pBufferInfo = 0;
+            setWrites[1].dstSet = batch_data->batch_dsets[i];
+            setWrites[1].pImageInfo = descriptorImageInfos;
+    
+            vkUpdateDescriptorSets(_data->logical_device->device, 2, setWrites, 0, NULL);
+        }
+
         vkCmdBeginRenderPass(cbuf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(cbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, _data->sprite_pipeline->pipeline);
         vkCmdBindVertexBuffers(cbuf, 0, 1, buffers, &size);
         vkCmdBindIndexBuffer(cbuf, batch_data->quad_index_buffer->buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindDescriptorSets(cbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, _data->sprite_pipeline->pipeline_layout, 0, 1, &batch_data->batch_dsets[i], 0, NULL);
 
         vk2d_scene_uniforms uniforms = {0};
         uniforms.projection = batch_data->uniforms.projection;
@@ -500,7 +622,7 @@ void vk2d_renderer_resize(u32 width, u32 height)
     // SPRITE PIPELINE
     {
         vk2d_shader* shader = vk2d_create_shader("vk2d_shaders/vertex.spv", "vk2d_shaders/fragment.spv");
-        _data->sprite_pipeline = vk2d_create_pipeline(shader, width, height, _data->sprite_renderpass);
+        _data->sprite_pipeline = vk2d_create_pipeline(shader, width, height, _data->sprite_renderpass, batch_data->batch_dset_layout);
         vk2d_free_shader(shader);
     }
 
@@ -522,6 +644,7 @@ void vk2d_renderer_draw_quad_mat4(vk2d_mat4 transform, vk2d_vec4 color)
         vk2d_renderer_end_scene();
         batch_data->quad_index_count = 0;
 	    batch_data->quad_vertex_buffer_ptr = batch_data->quad_vertex_buffer_base;
+        batch_data->texture_slot_index = 1;
     }
 
     size_t quadVertexCount = 4;
@@ -554,6 +677,70 @@ void vk2d_renderer_draw_quad(vk2d_vec3 position, vk2d_vec3 scale, vk2d_vec3 rota
     vk2d_renderer_draw_quad_mat4(transform, color);
 }
 
+void vk2d_renderer_draw_textured_quad_mat4(vk2d_mat4 transform, vk2d_texture* texture, vk2d_vec4 color)
+{
+    if (batch_data->quad_index_count >= max_indices)
+    {
+        vk2d_renderer_end_scene();
+        batch_data->quad_index_count = 0;
+	    batch_data->quad_vertex_buffer_ptr = batch_data->quad_vertex_buffer_base;
+        batch_data->texture_slot_index = 1;
+    }
+
+    size_t quadVertexCount = 4;
+    vk2d_vec2 texture_coords[] = {
+        vk2d_vec2_new(0.0f, 0.0f), vk2d_vec2_new(1.0f, 0.0f), vk2d_vec2_new(1.0f, 1.0f), vk2d_vec2_new(0.0f, 1.0f)
+    };
+    i32 tex_index = 0;
+
+    for (u32 i = 1; i < batch_data->texture_slot_index; i++)
+    {
+        if (batch_data->texture_slots[i] == texture)
+        {
+            tex_index = i;
+            break;
+        }
+    }
+
+    if (tex_index == 0)
+	{
+		if (batch_data->texture_slot_index == batch_data->max_slots)
+		{
+            vk2d_renderer_end_scene();
+            batch_data->quad_index_count = 0;
+	        batch_data->quad_vertex_buffer_ptr = batch_data->quad_vertex_buffer_base;
+            batch_data->texture_slot_index = 1;
+        }
+
+		tex_index = batch_data->texture_slot_index;
+		batch_data->texture_slots[batch_data->texture_slot_index] = texture;
+		batch_data->texture_slot_index++;
+	}
+
+    for (size_t i = 0; i < quadVertexCount; i++)
+    {
+        batch_data->quad_vertex_buffer_ptr->position = vk2d_mat4_multiply_v3(transform, batch_data->quad_vertex_positions[i]);
+        batch_data->quad_vertex_buffer_ptr->color = color;
+        batch_data->quad_vertex_buffer_ptr->tex_coords = texture_coords[i];
+        batch_data->quad_vertex_buffer_ptr->tex_index = tex_index;
+        batch_data->quad_vertex_buffer_ptr++;
+    }
+
+    batch_data->quad_index_count += 6;
+}
+
+void vk2d_renderer_draw_textured_quad(vk2d_vec3 position, vk2d_vec3 scale, vk2d_vec3 rotation, f32 angle, vk2d_texture* texture, vk2d_vec4 color)
+{
+    vk2d_mat4 transform = vk2d_mat4_translate(position);
+    vk2d_mat4 scale_mat = vk2d_mat4_scale(scale);
+    vk2d_mat4 rotation_mat = vk2d_mat4_rotate(rotation, angle);
+
+    transform = vk2d_mat4_multiply(transform, scale_mat);
+    transform = vk2d_mat4_multiply(transform, rotation_mat);
+
+    vk2d_renderer_draw_textured_quad_mat4(transform, texture, color);
+}
+
 vk2d_texture* vk2d_texture_init_from_file(const char* path)
 {
     vk2d_new(vk2d_texture* result, sizeof(vk2d_texture));
@@ -564,10 +751,25 @@ vk2d_texture* vk2d_texture_init_from_file(const char* path)
     return result;
 }
 
+vk2d_texture* vk2d_texture_init_from_raw_data(void* data)
+{
+    vk2d_new(vk2d_texture* result, sizeof(vk2d_texture));
+    result->private_handler = vk2d_init_texture_handler_raw(_data->physical_device, _data->logical_device, _data->render_command, data);
+    result->width = result->private_handler->width;
+    result->height = result->private_handler->height;
+    result->path = "NULL_PATH";
+    return result;
+}
+
 void vk2d_texture_free(vk2d_texture* texture)
 {
-    vk2d_free_texture_handler(_data->logical_device, texture->private_handler);
-    vk2d_free(texture);
+    vkDeviceWaitIdle(_data->logical_device->device);
+
+    if (texture != NULL)
+    {
+        vk2d_free_texture_handler(_data->logical_device, texture->private_handler);
+        vk2d_free(texture);
+    }
 }
 
 void vk2d_shutdown_renderer()
@@ -576,10 +778,12 @@ void vk2d_shutdown_renderer()
 
     // BATCH
     {
+        vk2d_texture_free(batch_data->white_texture);
+
         vk2d_free_vbuffer(batch_data->quad_vertex_buffer);
         vk2d_free_ibuffer(batch_data->quad_index_buffer);
         vk2d_free(batch_data->quad_vertex_buffer_base);
-        vk2d_free(batch_data);
+        vkFreeDescriptorSets(_data->logical_device->device, batch_data->batch_descriptor_pool, 2, batch_data->batch_dsets);
     }
 
     // CORE
@@ -591,12 +795,16 @@ void vk2d_shutdown_renderer()
 	    vkDestroySemaphore(_data->logical_device->device, _data->image_available_semaphore, NULL);
 
         vk2d_free_pipeline(_data->sprite_pipeline);
+        vkDestroyDescriptorSetLayout(_data->logical_device->device, batch_data->batch_dset_layout, NULL);
+        vkDestroyDescriptorPool(_data->logical_device->device, batch_data->batch_descriptor_pool, NULL);
         vk2d_free_renderpass(_data->sprite_renderpass);
         vk2d_free_swapchain(_data->swap_chain);
         vk2d_free_device(_data->logical_device);
         vk2d_free(_data->physical_device);
         vkDestroySurfaceKHR(_data->instance_data.instance, _data->surface, NULL);
         vkDestroyInstance(_data->instance_data.instance, NULL);
-        vk2d_free(_data);
     }
+
+    vk2d_free(batch_data);
+    vk2d_free(_data);
 }

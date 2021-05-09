@@ -5,7 +5,7 @@
 #include <Vk2D/Vk2D_Base/vk2d_log.h>
 #include <Vk2D/Vk2D_Render/Vk2D_Private/vk2d_vbuffer.h>
 
-vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, vk2d_renderpass* renderpass)
+vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, vk2d_renderpass* renderpass, VkDescriptorSetLayout descriptor)
 {
     vk2d_pipeline* result = malloc(sizeof(vk2d_pipeline));
 
@@ -94,7 +94,13 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, 
     VkPipelineColorBlendAttachmentState colorBlendAttachment;
     vk2d_zero_memory(colorBlendAttachment, sizeof(VkPipelineColorBlendAttachmentState));
     colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    colorBlendAttachment.blendEnable = VK_FALSE;
+    colorBlendAttachment.blendEnable = VK_TRUE;
+    colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
     VkPipelineColorBlendStateCreateInfo colorBlending;
     vk2d_zero_memory(colorBlending, sizeof(VkPipelineColorBlendStateCreateInfo));
@@ -114,10 +120,13 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, 
     range.size = sizeof(vk2d_scene_uniforms);
     range.stageFlags = VK_SHADER_STAGE_ALL;
 
+    VkDescriptorSetLayout layouts[2] = { descriptor, descriptor };
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo;
     vk2d_zero_memory(pipelineLayoutInfo, sizeof(VkPipelineLayoutCreateInfo));
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
+    pipelineLayoutInfo.setLayoutCount = 2;
+    pipelineLayoutInfo.pSetLayouts = layouts;
     pipelineLayoutInfo.pushConstantRangeCount = 1;
     pipelineLayoutInfo.pPushConstantRanges = &range;
 

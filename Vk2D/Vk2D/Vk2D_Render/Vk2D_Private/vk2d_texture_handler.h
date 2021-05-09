@@ -22,6 +22,7 @@ struct vk2d_texture_handler
 };
 
 vk2d_texture_handler* vk2d_init_texture_handler(vk2d_gpu* gpu, vk2d_device* device, vk2d_command* command, const char* filepath);
+vk2d_texture_handler* vk2d_init_texture_handler_raw(vk2d_gpu* gpu, vk2d_device* device, vk2d_command* command, void* data);
 void vk2d_free_texture_handler(vk2d_device* device, vk2d_texture_handler* handler);
 
 #endif

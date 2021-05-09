@@ -15,10 +15,9 @@ int main()
 
     vk2d_init_renderer(window, debug);
 
-    vk2d_vec3 position = vk2d_vec3_identity();
-
-    vk2d_texture* lambda = vk2d_texture_init_from_file("assets/lambda.png");
-
+    vk2d_texture* c_language = vk2d_texture_init_from_file("assets/fawful.png");
+    
+    int i = 0;
     while (!vk2d_window_should_close(window))
     {
         vk2d_window_update(window);
@@ -26,23 +25,27 @@ int main()
         vk2d_mat4 projection = vk2d_mat4_identity();
         vk2d_mat4 view = vk2d_mat4_identity();
 
-        if (vk2d_input_key_pressed(input, VK2D_KEY_UP))
-            position.y += 0.02f;
-        else if (vk2d_input_key_pressed(input, VK2D_KEY_DOWN))
-            position.y -= 0.02f;
-        if (vk2d_input_key_pressed(input, VK2D_KEY_RIGHT))
-            position.x += 0.02f;
-        else if (vk2d_input_key_pressed(input, VK2D_KEY_LEFT))
-            position.x -= 0.02f;
-
         vk2d_renderer_begin_scene(projection, view);
-        vk2d_renderer_draw_quad(position, vk2d_vec3_new(1.0f, 1.0f, 1.0f), vk2d_vec3_identity(), 0.0f, vk2d_vec4_new(0.8f, 0.2f, 0.3f, 1.0f));
+        
+        for (float y = -5.0f; y < 5.0f; y += 0.5f)
+        {
+            for (float x = -5.0f; x < 5.0f; x += 0.5f)
+            {
+                vk2d_vec4 color = { (x + 5.0f) / 10.0f, 0.4f, (y + 5.0f) / 10.0f, 0.7f };
+                vk2d_vec3 pos = { x, y, 0.0f };
+                vk2d_vec3 scale = { 0.15f, 0.15f, 1.0f };
+
+                vk2d_renderer_draw_textured_quad(pos, scale, vk2d_vec3_new(0.0f, 0.0f, 1.0f), i * 0.2f, c_language, color);
+            }
+        }
+        i++;
+
         vk2d_renderer_end_scene();
 
         vk2d_renderer_draw();
     }
 
-    vk2d_texture_free(lambda);
+    vk2d_texture_free(c_language);
     vk2d_shutdown_renderer();
 
     vk2d_free_input_system(input);
