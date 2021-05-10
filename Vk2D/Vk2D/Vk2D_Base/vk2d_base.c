@@ -41,6 +41,7 @@ i32 vk2d_init(vk2d_init_flags flags)
         _init.audio = 1;
         _init.everything = 1;
         result = glfwInit();
+        vk2d_assert(result == GLFW_TRUE);
         result = vk2d_audio_init();
         return result;
     }

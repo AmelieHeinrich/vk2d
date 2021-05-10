@@ -15,10 +15,7 @@ struct vk2d_shader
 };
 
 vk2d_shader* vk2d_create_shader(const char* vertexPath, const char* fragmentPath);
-void vk2d_make_geometry_shader(vk2d_shader* shader, const char* geometryPath);
-void vk2d_make_compute_shader(vk2d_shader* shader, const char* computeShader);
-void vk2d_make_tessellation_control_shader(vk2d_shader* shader, const char* tescFile);
-void vk2d_make_tessellation_evaluation_shader(vk2d_shader* shader, const char* teseFile);
+void vk2d_build_shader_module(vk2d_shader* shader, const char* path);
 
 void vk2d_free_shader(vk2d_shader* shader);
 

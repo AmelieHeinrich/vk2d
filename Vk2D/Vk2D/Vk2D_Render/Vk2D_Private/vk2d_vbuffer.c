@@ -46,6 +46,35 @@ VkVertexInputAttributeDescription* vk2d_get_attribute_descriptions()
     return NULL;
 }
 
+static void create_buffer(vk2d_gpu* gpu, vk2d_device* device, VkBuffer* buffer, VkDeviceMemory* memory, size_t bufferSize, VkBufferUsageFlags flags, VkMemoryPropertyFlags memFlags)
+{
+    VkBufferCreateInfo bufferInfo;
+    vk2d_zero_memory(bufferInfo, sizeof(VkBufferCreateInfo));
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = bufferSize;
+    bufferInfo.usage = flags;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    if (vkCreateBuffer(device->device, &bufferInfo, NULL, buffer) != VK_SUCCESS) {
+        vk2d_log_fatal("Vk2D Renderer", "Failed to create buffer!");
+    }
+
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(device->device, *buffer, &memRequirements);
+
+    VkMemoryAllocateInfo allocInfo;
+    vk2d_zero_memory(allocInfo, sizeof(VkMemoryAllocateInfo));
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = vk2d_find_memory_type(gpu, memRequirements.memoryTypeBits, memFlags);
+
+    if (vkAllocateMemory(device->device, &allocInfo, NULL, memory) != VK_SUCCESS) {
+        vk2d_log_fatal("Vk2D Renderer", "Failed to allocate buffer memory!");
+    }
+
+    vkBindBufferMemory(device->device, *buffer, *memory, 0);
+}
+
 vk2d_vbuffer* vk2d_create_vbuffer(vk2d_gpu* gpu, vk2d_device* device, vk2d_command* command, i32 listSize, void* vertices)
 {
     vk2d_new(vk2d_vbuffer* result, sizeof(vk2d_vbuffer));
@@ -57,68 +86,14 @@ vk2d_vbuffer* vk2d_create_vbuffer(vk2d_gpu* gpu, vk2d_device* device, vk2d_comma
         VkBuffer stagingBuffer = VK_NULL_HANDLE;
         VkDeviceMemory stagingBufferMemory = 0;
 
-        // Staging buffer
-        {
-            VkBufferCreateInfo bufferInfo;
-            vk2d_zero_memory(bufferInfo, sizeof(VkBufferCreateInfo));
-            bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-            bufferInfo.size = bufferSize;
-            bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-            bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-            if (vkCreateBuffer(device->device, &bufferInfo, NULL, &stagingBuffer) != VK_SUCCESS) {
-                vk2d_log_fatal("Vk2D Renderer", "Failed to create buffer!");
-            }
-
-            VkMemoryRequirements memRequirements;
-            vkGetBufferMemoryRequirements(device->device, stagingBuffer, &memRequirements);
-
-            VkMemoryAllocateInfo allocInfo;
-            vk2d_zero_memory(allocInfo, sizeof(VkMemoryAllocateInfo));
-            allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-            allocInfo.allocationSize = memRequirements.size;
-            allocInfo.memoryTypeIndex = vk2d_find_memory_type(gpu, memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-            if (vkAllocateMemory(device->device, &allocInfo, NULL, &stagingBufferMemory) != VK_SUCCESS) {
-                vk2d_log_fatal("Vk2D Renderer", "Failed to allocate buffer memory!");
-            }
-
-            vkBindBufferMemory(device->device, stagingBuffer, stagingBufferMemory, 0);
-        }
+        create_buffer(gpu, device, &stagingBuffer, &stagingBufferMemory, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
         void* data;
         vkMapMemory(device->device, stagingBufferMemory, 0, bufferSize, 0, &data);
         memcpy(data, vertices, (size_t)bufferSize);
         vkUnmapMemory(device->device, stagingBufferMemory);
 
-        // Vertex buffer creation
-        {
-            VkBufferCreateInfo bufferInfo;
-            vk2d_zero_memory(bufferInfo, sizeof(VkBufferCreateInfo));
-            bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-            bufferInfo.size = bufferSize;
-            bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-            bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-            if (vkCreateBuffer(device->device, &bufferInfo, NULL, &result->buffer) != VK_SUCCESS) {
-                vk2d_log_fatal("Vk2D Renderer", "Failed to create buffer!");
-            }
-
-            VkMemoryRequirements memRequirements;
-            vkGetBufferMemoryRequirements(device->device, result->buffer, &memRequirements);
-
-            VkMemoryAllocateInfo allocInfo;
-            vk2d_zero_memory(allocInfo, sizeof(VkMemoryAllocateInfo));
-            allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-            allocInfo.allocationSize = memRequirements.size;
-            allocInfo.memoryTypeIndex = vk2d_find_memory_type(gpu, memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-            if (vkAllocateMemory(device->device, &allocInfo, NULL, &result->buffer_memory) != VK_SUCCESS) {
-                vk2d_log_fatal("Vk2D Renderer", "Failed to allocate buffer memory!");
-            }
-
-            vkBindBufferMemory(device->device, result->buffer, result->buffer_memory, 0);
-        }
+        create_buffer(gpu, device, &result->buffer, &result->buffer_memory, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
         // Copy buffer
         {
@@ -182,31 +157,7 @@ vk2d_vbuffer* vk2d_create_vbuffer_empty(vk2d_gpu* gpu, vk2d_device* device, vk2d
     {
         VkDeviceSize bufferSize = listSize * sizeof(vk2d_vertex);
 
-        VkBufferCreateInfo bufferInfo;
-        vk2d_zero_memory(bufferInfo, sizeof(VkBufferCreateInfo));
-        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bufferInfo.size = bufferSize;
-        bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-        if (vkCreateBuffer(device->device, &bufferInfo, NULL, &result->buffer) != VK_SUCCESS) {
-            vk2d_log_fatal("Vk2D Renderer", "Failed to create buffer!");
-        }
-
-        VkMemoryRequirements memRequirements;
-        vkGetBufferMemoryRequirements(device->device, result->buffer, &memRequirements);
-
-        VkMemoryAllocateInfo allocInfo;
-        vk2d_zero_memory(allocInfo, sizeof(VkMemoryAllocateInfo));
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = vk2d_find_memory_type(gpu, memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-
-        if (vkAllocateMemory(device->device, &allocInfo, NULL, &result->buffer_memory) != VK_SUCCESS) {
-            vk2d_log_fatal("Vk2D Renderer", "Failed to allocate buffer memory!");
-        }
-
-        vkBindBufferMemory(device->device, result->buffer, result->buffer_memory, 0);
+        create_buffer(gpu, device, &result->buffer, &result->buffer_memory, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
         vk2d_assert(result->buffer != VK_NULL_HANDLE);
 

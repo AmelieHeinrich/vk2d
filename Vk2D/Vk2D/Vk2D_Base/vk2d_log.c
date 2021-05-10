@@ -62,12 +62,7 @@ void vk2d_log_error(const char* tag, const char* message)
 
 void vk2d_log_fatal(const char* tag, const char* message)
 {
-    time_t now;
-    time(&now);
-    printf(RESET);
-    printf(RED);
-    printf("%s [%s] : %s\n", ctime(&now), tag, message);
-    printf(RESET);
+    vk2d_log_error(tag, message);
 
     exit(EXIT_FAILURE);
 }

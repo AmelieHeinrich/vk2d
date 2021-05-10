@@ -54,9 +54,9 @@ vk2d_shader* vk2d_create_shader(const char* vertexPath, const char* fragmentPath
     return result;
 }
 
-void vk2d_make_geometry_shader(vk2d_shader* shader, const char* geometryPath)
+void vk2d_build_shader_module(vk2d_shader* shader, const char* path)
 {
-    char* source = vk2d_read_file(geometryPath);
+    char* source = vk2d_read_file(path);
 
     VkDevice device = volkGetLoadedDevice();
 
@@ -68,57 +68,6 @@ void vk2d_make_geometry_shader(vk2d_shader* shader, const char* geometryPath)
     createInfo.pCode = (const uint32_t*)source;
 
     VkResult res = vkCreateShaderModule(device, &createInfo, NULL, &shader->geometry_shader);
-    vk2d_assert(res == VK_SUCCESS);
-}
-
-void vk2d_make_compute_shader(vk2d_shader* shader, const char* computeShader)
-{
-    char* source = vk2d_read_file(computeShader);
-
-    VkDevice device = volkGetLoadedDevice();
-
-    VkShaderModuleCreateInfo createInfo;
-    vk2d_zero_memory(createInfo, sizeof(VkShaderModuleCreateInfo));
-
-    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = sizeof(source) / sizeof(char);
-    createInfo.pCode = (const uint32_t*)source;
-
-    VkResult res = vkCreateShaderModule(device, &createInfo, NULL, &shader->compute_shader);
-    vk2d_assert(res == VK_SUCCESS);
-}
-
-void vk2d_make_tessellation_control_shader(vk2d_shader* shader, const char* tescFile)
-{
-    char* source = vk2d_read_file(tescFile);
-
-    VkDevice device = volkGetLoadedDevice();
-
-    VkShaderModuleCreateInfo createInfo;
-    vk2d_zero_memory(createInfo, sizeof(VkShaderModuleCreateInfo));
-
-    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = sizeof(source) / sizeof(char);
-    createInfo.pCode = (const uint32_t*)source;
-
-    VkResult res = vkCreateShaderModule(device, &createInfo, NULL, &shader->tessellation_control_shader);
-    vk2d_assert(res == VK_SUCCESS);
-}
-
-void vk2d_make_tessellation_evaluation_shader(vk2d_shader* shader, const char* teseFile)
-{
-    char* source = vk2d_read_file(teseFile);
-
-    VkDevice device = volkGetLoadedDevice();
-
-    VkShaderModuleCreateInfo createInfo;
-    vk2d_zero_memory(createInfo, sizeof(VkShaderModuleCreateInfo));
-
-    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = sizeof(source) / sizeof(char);
-    createInfo.pCode = (const uint32_t*)source;
-
-    VkResult res = vkCreateShaderModule(device, &createInfo, NULL, &shader->tessellation_evaluation_shader);
     vk2d_assert(res == VK_SUCCESS);
 }
 

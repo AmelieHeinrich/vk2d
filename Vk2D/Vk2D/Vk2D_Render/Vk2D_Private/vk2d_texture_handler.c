@@ -135,11 +135,6 @@ vk2d_texture_handler* vk2d_init_texture_handler(vk2d_gpu* gpu, vk2d_device* devi
             barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             barrier.image = result->texture_image;
-            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            barrier.subresourceRange.baseMipLevel = 0;
-            barrier.subresourceRange.levelCount = 1;
-            barrier.subresourceRange.baseArrayLayer = 0;
-            barrier.subresourceRange.layerCount = 1;
 
             VkPipelineStageFlags sourceStage;
             VkPipelineStageFlags destinationStage;
