@@ -16,9 +16,9 @@ typedef double d32;
 
 typedef enum vk2d_init_flags
 {
-    vk2d_init_video, // Initialises only the renderer subsystem
-    vk2d_init_audio, // Initialises only the audio subsystem
-    vk2d_init_everything // Initialises everything
+    vk2d_init_video = 1, // Initialises only the renderer subsystem
+    vk2d_init_audio = 2, // Initialises only the audio subsystem
+    vk2d_init_everything = 3 // Initialises everything
 } vk2d_init_flags;
 
 /// Initialises Vk2D

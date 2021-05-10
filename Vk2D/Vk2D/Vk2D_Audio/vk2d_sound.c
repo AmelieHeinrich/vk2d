@@ -32,7 +32,7 @@ vk2d_sound* vk2d_init_sound_from_file(const char* path, vk2d_audio_format format
 
 vk2d_sound* vk2d_init_sound_from_memory(void* memory, size_t size)
 {
-
+    return NULL;
 }
 
 void vk2d_free_sound(vk2d_sound* sound)

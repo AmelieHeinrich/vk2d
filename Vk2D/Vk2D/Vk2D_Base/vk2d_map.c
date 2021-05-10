@@ -8,7 +8,7 @@ static i32 vk2d_map_hash(const char* key)
 {
     i32 hash = 0;
 
-    for (i32 i = 0; i < strlen(key); ++i)
+    for (i32 i = 0; i < sizeof(key) - 1; ++i)
         hash += key[i] * 23;
     
     return hash;
@@ -16,19 +16,27 @@ static i32 vk2d_map_hash(const char* key)
 
 vk2d_map* vk2d_map_new(i32 max_len, size_t size)
 {
-    vk2d_new(vk2d_map* map, sizeof(vk2d_map))
+	vk2d_new(vk2d_map * map, sizeof(vk2d_map));
 
-    vk2d_map_item item;
-    vk2d_zero_memory(item, sizeof(vk2d_map_item));
+	if (map)
+	{
+		vk2d_map_item item;
+		vk2d_zero_memory(item, sizeof(vk2d_map_item));
 
-    map->max_len = max_len;
-    map->size = size;
-    vk2d_new(map->items, max_len * sizeof(vk2d_map_item));
+		map->max_len = max_len;
+		map->size = size;
+		vk2d_new(map->items, max_len * sizeof(vk2d_map_item));
 
-    for (i32 i = 0; i < max_len; ++i)
-        map->items[i] = item;
+		if (map->items)
+		{
+			for (i32 i = 0; i < max_len; i++)
+				map->items[i] = item;
+		}
 
-    return map;
+		return map;
+	}
+
+	return NULL;
 }
 
 void vk2d_map_set(vk2d_map* map, const char* key, void* value)
@@ -38,11 +46,13 @@ void vk2d_map_set(vk2d_map* map, const char* key, void* value)
     vk2d_map_item* new_item = NULL;
 
     if (item->value == NULL) {
-        char* k = calloc(sizeof(char), strlen(key) + 1);
+        char* k = calloc(sizeof(char), (sizeof(key) - 1) + 1);
 		void* v = calloc(map->size, 1);
 
-        strcpy_s(k, sizeof(key), key);
-		memcpy(v, value, map->size);
+        if (k)
+			strcpy_s(k, sizeof(key), key);
+		if (v)
+			memcpy(v, value, map->size);
 
         item->key = k;
 		item->value = v;
@@ -53,7 +63,9 @@ void vk2d_map_set(vk2d_map* map, const char* key, void* value)
         if (strcmp(item->key, key) == 0) {
 			void *v = calloc(map->size, 1);
 
-			memcpy(v, value, map->size);
+			if (v)
+				memcpy(v, value, map->size);
+
 			vk2d_free(item->value);
 			item->value = v;
 			return;
@@ -64,12 +76,15 @@ void vk2d_map_set(vk2d_map* map, const char* key, void* value)
 		item = item->next;
     }
 
-    new_item = calloc(sizeof(vk2d_map_item), 1);
-	new_item->key = calloc(sizeof(char), strlen(key) + 1);
-	new_item->value = calloc(map->size, 1);
-	strcpy_s(new_item->key, sizeof(key), key);
-	memcpy(new_item->value, value, map->size);
-	item->next = new_item;
+	if (new_item)
+	{
+		new_item = calloc(sizeof(vk2d_map_item), 1);
+		new_item->key = calloc(sizeof(char), (sizeof(key) - 1) + 1);
+		new_item->value = calloc(map->size, 1);
+		strcpy_s(new_item->key, sizeof(key), key);
+		memcpy(new_item->value, value, map->size);
+		item->next = new_item;
+	}
 }
 
 void* vk2d_map_get(vk2d_map* map, const char* key)
@@ -102,23 +117,27 @@ void vk2d_map_remove(vk2d_map* map, const char* key)
 		curr = next;
 	}
 
-	vk2d_free(curr->key);
-	vk2d_free(curr->value);
+	if (curr)
+	{
+		vk2d_free(curr->key);
+		vk2d_free(curr->value);
 
-	if (next == NULL) {
-		curr->key = NULL;
-		curr->value = NULL;
-		if (prev == NULL)
-			return;
+		if (next == NULL) {
+			curr->key = NULL;
+			curr->value = NULL;
+			if (prev == NULL)
+				return;
 
-		if (prev->next != NULL) {
-			vk2d_free(prev->next);
-			prev->next = NULL;
+			if (prev->next != NULL) {
+				vk2d_free(prev->next);
+				prev->next = NULL;
+			}
 		}
-	} else {
-		curr->key = next->key;
-		curr->value = next->value;
-		curr->next = next->next;
-		vk2d_free(next);
+		else {
+			curr->key = next->key;
+			curr->value = next->value;
+			curr->next = next->next;
+			vk2d_free(next);
+		}
 	}
 }

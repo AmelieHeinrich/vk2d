@@ -8,11 +8,16 @@
 vk2d_list* vk2d_list_new(size_t size)
 {
     vk2d_new(vk2d_list* list, sizeof(vk2d_list));
-    list->size = size;
-    list->count = 0;
-    list->max = 0;
-    list->items = NULL;
-    return list;
+    if (list)
+    {
+        list->size = size;
+        list->count = 0;
+        list->max = 0;
+        list->items = NULL;
+        return list;
+    }
+
+    return NULL;
 }
 
 void* vk2d_list_add(vk2d_list* list, void* value)
@@ -34,8 +39,11 @@ void* vk2d_list_add(vk2d_list* list, void* value)
 
     pos = (char*)list->items+(list->count * list->size);
 
-    if (memcpy(pos, value, list->size) == NULL) {
-        vk2d_log_fatal("Vk2D Container List", "Failed to copy list value!");
+    if (pos)
+    {
+        if (memcpy(pos, value, list->size) == NULL) {
+            vk2d_log_fatal("Vk2D Container List", "Failed to copy list value!");
+        }
     }
 
     list->count++;
@@ -44,12 +52,11 @@ void* vk2d_list_add(vk2d_list* list, void* value)
 
 void vk2d_list_remove(vk2d_list* list, void* value)
 {
-    i32 i = 0;
     char* pos = (char*)list->items;
-    i32 count = 0;
-    size_t reminder = 0;
+    i32 count;
+    size_t reminder;
 
-    for (i = 0; i < list->count; ++i) 
+    for (i32 i = 0; i < list->count; ++i) 
     {
         if (memcmp(pos, value, list->size) == 0)
         {

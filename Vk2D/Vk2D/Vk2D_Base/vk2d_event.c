@@ -50,8 +50,11 @@ void vk2d_event_emit(const char* name, int lowParam, int highParam)
     vk2d_event_callback cb = NULL;
     vk2d_event_callback* list = NULL;
 
-    if (NULL == t)
+    if (t == NULL)
+    {
         vk2d_log_fatal("Vk2D Event", "failed to emit non-existing event type");
+        return;
+    }
 
     list = t->listeners->items;
 
@@ -71,7 +74,8 @@ void vk2d_event_bind(const char* name, vk2d_event_callback callback)
         t = &event_table[index];
 
         t->listeners = listeners;
-        strncpy(t->name, name, EVENT_NAME_MAX);
+        strncpy_s(t->name, EVENT_NAME_MAX, name, EVENT_NAME_MAX);
+        return;
     }
 
     if (NULL == t && NULL != event_table[index].listeners) {
@@ -82,9 +86,15 @@ void vk2d_event_bind(const char* name, vk2d_event_callback callback)
         while (NULL != tail->next)
             tail = tail->next;
 
-        t->listeners = listeners;
-        strncpy(t->name, name, EVENT_NAME_MAX);
+        if (t)
+        {
+            t->listeners = listeners;
+            strncpy_s(t->name, EVENT_NAME_MAX, name, EVENT_NAME_MAX);
+        }
     }
 
-    vk2d_list_add(t->listeners, &callback);
+    if (t)
+    {
+        vk2d_list_add(t->listeners, &callback);
+    }
 }

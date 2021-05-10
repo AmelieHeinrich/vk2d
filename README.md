@@ -1,6 +1,7 @@
 # Vk2D : Small 2D engine written in C99
 
-## Current features :
+## Current features:\
+
 - 2D Renderer (Vulkan backend)
 - Input
 - Window system
@@ -10,5 +11,6 @@
 - Event system
 - Logger
 
-## Doing :
+## Doing:\
+
 - Audio

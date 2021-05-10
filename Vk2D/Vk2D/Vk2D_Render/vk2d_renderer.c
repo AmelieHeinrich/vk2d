@@ -97,7 +97,7 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
                 "VK_LAYER_KHRONOS_validation"
             };
 
-            VkBool32 validation_found = 0;
+            VkBool32 validation_found;
             res = vkEnumerateInstanceLayerProperties(&instance_layer_count, NULL);
             vk2d_assert(!res);
 
@@ -128,7 +128,7 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
             VkBool32 platformSurfaceExtFound = 0;
             vk2d_zero_memory_ptr(_data->instance_data.extension_names, sizeof(_data->instance_data.extension_names))
             res = vkEnumerateInstanceExtensionProperties(NULL, &instance_extension_count, NULL);
-            vk2d_assert(!res);
+            vk2d_assert(res == VK_SUCCESS);
 
             if (instance_extension_count > 0) {
                 VkExtensionProperties *instance_extensions = malloc(sizeof(VkExtensionProperties) * instance_extension_count);
@@ -180,6 +180,7 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
             createInfo.ppEnabledLayerNames = NULL; //(const char *const *)_data->instance_data.enabled_layers;
 
             res = vkCreateInstance(&createInfo, NULL, &_data->instance_data.instance);
+            vk2d_assert(res == VK_SUCCESS);
 
             volkLoadInstance(_data->instance_data.instance);
 
@@ -206,7 +207,10 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
                 glfwGetWin32Window(window->window_pointer)
             };
 
-            res = test(_data->instance_data.instance, &surface_create_info, NULL, &_data->surface);
+            if (test)
+                res = test(_data->instance_data.instance, &surface_create_info, NULL, &_data->surface);
+
+            vk2d_assert(res == VK_SUCCESS);
             #endif
 
             if (_debug_enabled)
@@ -380,18 +384,21 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
         vk2d_new(u32* quadIndices, sizeof(u32) * max_indices);
 
         u32 offset = 0;
-        for (u32 i = 0; i < max_indices; i += 6)
+        if (quadIndices)
         {
-            quadIndices[i + 0] = offset + 0;
-			quadIndices[i + 1] = offset + 1;
-			quadIndices[i + 2] = offset + 2;
+            for (u32 i = 0; i < max_indices; i += 6)
+            {
+                quadIndices[i + 0] = offset + 0;
+                quadIndices[i + 1] = offset + 1;
+                quadIndices[i + 2] = offset + 2;
 
-			quadIndices[i + 3] = offset + 2;
-			quadIndices[i + 4] = offset + 3;
-			quadIndices[i + 5] = offset + 0;
+                quadIndices[i + 3] = offset + 2;
+                quadIndices[i + 4] = offset + 3;
+                quadIndices[i + 5] = offset + 0;
 
-            offset += 4;
-        }               
+                offset += 4;
+            }
+        }
 
         batch_data->quad_index_buffer = vk2d_create_ibuffer(_data->physical_device, _data->logical_device, _data->render_command, 
                                                             max_indices, quadIndices);      
@@ -431,7 +438,7 @@ void vk2d_renderer_begin_scene(vk2d_mat4 projection, vk2d_mat4 view)
 
 void vk2d_renderer_end_scene()
 {
-    VkResult img = vkAcquireNextImageKHR(_data->logical_device->device, _data->swap_chain->handle, 1000000000, _data->image_available_semaphore, VK_NULL_HANDLE, &batch_data->image_index);
+    vkAcquireNextImageKHR(_data->logical_device->device, _data->swap_chain->handle, 1000000000, _data->image_available_semaphore, VK_NULL_HANDLE, &batch_data->image_index);
 
     vkWaitForFences(_data->logical_device->device, 1, &_data->fence, VK_TRUE, 1000000000);
     vkResetFences(_data->logical_device->device, 1, &_data->fence);
@@ -744,21 +751,30 @@ void vk2d_renderer_draw_textured_quad(vk2d_vec3 position, vk2d_vec3 scale, vk2d_
 vk2d_texture* vk2d_texture_init_from_file(const char* path)
 {
     vk2d_new(vk2d_texture* result, sizeof(vk2d_texture));
-    result->private_handler = vk2d_init_texture_handler(_data->physical_device, _data->logical_device, _data->render_command, path);
-    result->width = result->private_handler->width;
-    result->height = result->private_handler->height;
-    result->path = path;
-    return result;
+    if (result)
+    {
+        result->private_handler = vk2d_init_texture_handler(_data->physical_device, _data->logical_device, _data->render_command, path);
+        result->width = result->private_handler->width;
+        result->height = result->private_handler->height;
+        result->path = path;
+        return result;
+    }
+    return NULL;
 }
 
 vk2d_texture* vk2d_texture_init_from_raw_data(void* data)
 {
     vk2d_new(vk2d_texture* result, sizeof(vk2d_texture));
-    result->private_handler = vk2d_init_texture_handler_raw(_data->physical_device, _data->logical_device, _data->render_command, data);
-    result->width = result->private_handler->width;
-    result->height = result->private_handler->height;
-    result->path = "NULL_PATH";
-    return result;
+    if (result)
+    {
+        result->private_handler = vk2d_init_texture_handler_raw(_data->physical_device, _data->logical_device, _data->render_command, data);
+        result->width = result->private_handler->width;
+        result->height = result->private_handler->height;
+        result->path = "NULL_PATH";
+        return result;
+    }
+
+    return NULL;
 }
 
 void vk2d_texture_free(vk2d_texture* texture)

@@ -72,17 +72,20 @@ i32 vk2d_audio_init()
 {
     vk2d_new(_audio_ctx, sizeof(vk2d_audio_ctx));
 
-	const ALCchar* defaultDeviceString = alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
-
-    _audio_ctx->device = alcOpenDevice(defaultDeviceString);
-    vk2d_assert(_audio_ctx->device != ALC_INVALID_DEVICE);
-
-	_audio_ctx->alc_ctx = alcCreateContext(_audio_ctx->device, NULL);
-
-	if (!alcMakeContextCurrent(_audio_ctx->alc_ctx))
+	if (_audio_ctx)
 	{
-		vk2d_log_fatal("Vk2D Audio", "Failed to make the OpenAL context current!");
-		return 0;
+		const ALCchar* defaultDeviceString = alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
+
+		_audio_ctx->device = alcOpenDevice(defaultDeviceString);
+		vk2d_assert(_audio_ctx->device != NULL);
+
+		_audio_ctx->alc_ctx = alcCreateContext(_audio_ctx->device, NULL);
+
+		if (!alcMakeContextCurrent(_audio_ctx->alc_ctx))
+		{
+			vk2d_log_fatal("Vk2D Audio", "Failed to make the OpenAL context current!");
+			return 0;
+		}
 	}
 
 	return check_alc_error();

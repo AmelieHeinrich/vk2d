@@ -32,6 +32,7 @@ i32 vk2d_init(vk2d_init_flags flags)
         _init.video = 0;
         _init.audio = 1;
         _init.everything = 0;
+        return result;
     }
 
     if (flags & vk2d_init_everything)
