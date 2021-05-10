@@ -7,3 +7,9 @@
 [submodule "ext/vulkan-headers"]
 	path = ext/vulkan-headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers
+[submodule "ext/openal-soft"]
+	path = ext/openal-soft
+	url = https://github.com/kcat/openal-soft
+[submodule "ext/dr_libs"]
+	path = ext/dr_libs
+	url = https://github.com/mackron/dr_libs

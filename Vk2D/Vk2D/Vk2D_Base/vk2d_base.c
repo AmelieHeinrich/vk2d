@@ -2,11 +2,13 @@
 
 #include <GLFW/glfw3.h>
 #include <Vk2D/Vk2D_Render/vk2d_renderer.h>
+#include <Vk2D/Vk2D_Audio/vk2d_audio.h>
 #include <Vk2D/Vk2D_Base/vk2d_log.h>
 
 struct vk2d_initialised_subsystems
 {
     i32 video;
+    i32 audio;
     i32 everything;
 };
 
@@ -24,11 +26,21 @@ i32 vk2d_init(vk2d_init_flags flags)
         return result;
     }
 
+    if (flags & vk2d_init_audio)
+    {  
+        result = vk2d_audio_init();
+        _init.video = 0;
+        _init.audio = 1;
+        _init.everything = 0;
+    }
+
     if (flags & vk2d_init_everything)
     {
         _init.video = 1;
+        _init.audio = 1;
         _init.everything = 1;
         result = glfwInit();
+        result = vk2d_audio_init();
         return result;
     }
 
@@ -37,6 +49,10 @@ i32 vk2d_init(vk2d_init_flags flags)
 
 void vk2d_quit()
 {
+    if (_init.audio)
+    {
+        vk2d_audio_destroy();
+    }
     if (_init.video)
     {
         glfwTerminate();
@@ -44,6 +60,7 @@ void vk2d_quit()
     }
     if (_init.everything)
     {
+        vk2d_audio_destroy();
         glfwTerminate();
         return;
     }
