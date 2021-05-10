@@ -74,6 +74,42 @@ static VkBool32 demo_check_layers(u32 check_count, char **check_names,
     return 1;
 }
 
+void init_batch_dset()
+{
+    VkDescriptorPoolSize sampler_size;
+    sampler_size.type = VK_DESCRIPTOR_TYPE_SAMPLER;
+    sampler_size.descriptorCount = 1 * _data->swap_chain->num_buffers;
+
+    VkDescriptorPoolSize textures_size;
+    textures_size.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    textures_size.descriptorCount = 32 * _data->swap_chain->num_buffers;
+
+    VkDescriptorPoolSize sizes[] = { sampler_size, textures_size };
+
+    VkDescriptorPoolCreateInfo poolInfo;
+    vk2d_zero_memory(poolInfo, sizeof(VkDescriptorPoolCreateInfo));
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    poolInfo.poolSizeCount = 2;
+    poolInfo.pPoolSizes = sizes;
+    poolInfo.maxSets = 512 * _data->swap_chain->num_buffers;
+
+    vk2d_assert(vkCreateDescriptorPool(_data->logical_device->device, &poolInfo, NULL, &batch_data->batch_descriptor_pool) == VK_SUCCESS);
+
+    VkDescriptorSetLayout layouts[2];
+    layouts[0] = batch_data->batch_dset_layout;
+    layouts[1] = batch_data->batch_dset_layout;
+
+    VkDescriptorSetAllocateInfo allocInfo;
+    vk2d_zero_memory(allocInfo, sizeof(VkDescriptorSetAllocateInfo))
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = batch_data->batch_descriptor_pool;
+    allocInfo.descriptorSetCount = _data->swap_chain->num_buffers;
+    allocInfo.pSetLayouts = layouts;
+
+    vk2d_assert(vkAllocateDescriptorSets(_data->logical_device->device, &allocInfo, batch_data->batch_dsets) == VK_SUCCESS);
+}
+
 i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
 {
     _debug_enabled = enableDebug;
@@ -278,26 +314,6 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
 
         // Descriptors
         {
-            VkDescriptorPoolSize sampler_size;
-            sampler_size.type = VK_DESCRIPTOR_TYPE_SAMPLER;
-            sampler_size.descriptorCount = 1 * _data->swap_chain->num_buffers;
-
-            VkDescriptorPoolSize textures_size;
-            textures_size.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-            textures_size.descriptorCount = 32 * _data->swap_chain->num_buffers;
-
-            VkDescriptorPoolSize sizes[] = { sampler_size, textures_size };
-
-            VkDescriptorPoolCreateInfo poolInfo;
-            vk2d_zero_memory(poolInfo, sizeof(VkDescriptorPoolCreateInfo));
-            poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-            poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-            poolInfo.poolSizeCount = 2;
-            poolInfo.pPoolSizes = sizes;
-            poolInfo.maxSets = 512 * _data->swap_chain->num_buffers;        
-
-            vk2d_assert(vkCreateDescriptorPool(_data->logical_device->device, &poolInfo, NULL, &batch_data->batch_descriptor_pool) == VK_SUCCESS);
-
             VkDescriptorSetLayoutBinding samplerLayoutBinding;
             vk2d_zero_memory(samplerLayoutBinding, sizeof(VkDescriptorSetLayoutBinding));
             samplerLayoutBinding.binding = 0;
@@ -324,18 +340,7 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
 
             vk2d_assert(vkCreateDescriptorSetLayout(_data->logical_device->device, &layoutInfo, NULL, &batch_data->batch_dset_layout) == VK_SUCCESS);      
 
-            VkDescriptorSetLayout layouts[2];
-            layouts[0] = batch_data->batch_dset_layout;
-            layouts[1] = batch_data->batch_dset_layout;
-
-            VkDescriptorSetAllocateInfo allocInfo;
-            vk2d_zero_memory(allocInfo, sizeof(VkDescriptorSetAllocateInfo))
-            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            allocInfo.descriptorPool = batch_data->batch_descriptor_pool;
-            allocInfo.descriptorSetCount = _data->swap_chain->num_buffers;
-            allocInfo.pSetLayouts = layouts;
-
-            vk2d_assert(vkAllocateDescriptorSets(_data->logical_device->device, &allocInfo, batch_data->batch_dsets) == VK_SUCCESS);
+            init_batch_dset();
         }
 
         // SPRITE PIPELINE
@@ -638,38 +643,7 @@ void vk2d_renderer_resize(u32 width, u32 height)
 
     // BATCH
     {
-        VkDescriptorPoolSize sampler_size;
-        sampler_size.type = VK_DESCRIPTOR_TYPE_SAMPLER;
-        sampler_size.descriptorCount = 1 * _data->swap_chain->num_buffers;
-
-        VkDescriptorPoolSize textures_size;
-        textures_size.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        textures_size.descriptorCount = 32 * _data->swap_chain->num_buffers;
-
-        VkDescriptorPoolSize sizes[] = { sampler_size, textures_size };
-
-        VkDescriptorPoolCreateInfo poolInfo;
-        vk2d_zero_memory(poolInfo, sizeof(VkDescriptorPoolCreateInfo));
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-        poolInfo.poolSizeCount = 2;
-        poolInfo.pPoolSizes = sizes;
-        poolInfo.maxSets = 512 * _data->swap_chain->num_buffers;
-
-        vk2d_assert(vkCreateDescriptorPool(_data->logical_device->device, &poolInfo, NULL, &batch_data->batch_descriptor_pool) == VK_SUCCESS);
-
-        VkDescriptorSetLayout layouts[2];
-        layouts[0] = batch_data->batch_dset_layout;
-        layouts[1] = batch_data->batch_dset_layout;
-
-        VkDescriptorSetAllocateInfo allocInfo;
-        vk2d_zero_memory(allocInfo, sizeof(VkDescriptorSetAllocateInfo))
-            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = batch_data->batch_descriptor_pool;
-        allocInfo.descriptorSetCount = _data->swap_chain->num_buffers;
-        allocInfo.pSetLayouts = layouts;
-
-        vk2d_assert(vkAllocateDescriptorSets(_data->logical_device->device, &allocInfo, batch_data->batch_dsets) == VK_SUCCESS);
+        init_batch_dset();
     }
 
     // SPRITE PIPELINE
