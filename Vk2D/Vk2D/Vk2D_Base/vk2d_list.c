@@ -52,18 +52,18 @@ void vk2d_list_remove(vk2d_list* list, void* value)
     for (i = 0; i < list->count; ++i) 
     {
         if (memcmp(pos, value, list->size) == 0)
-            goto rm;
+        {
+            count = list->max - i - 1;
+            reminder = count * list->size;
+            if (memcpy(pos, pos + list->size, reminder) == NULL) {
+                vk2d_log_fatal("Vk2D Container List", "Failed to remove element from list!");
+            }
+            list->count--;
+            return;
+        }
 
         pos += list->size;
     }
-
-rm:
-    count = list->max - i - 1;
-    reminder = count * list->size;
-    if (memcpy(pos, pos + list->size, reminder) == NULL) {
-        vk2d_log_fatal("Vk2D Container List", "Failed to remove element from list!");
-    }
-    list->count--;
 }
 
 void vk2d_list_clear(vk2d_list* list, void* value)
