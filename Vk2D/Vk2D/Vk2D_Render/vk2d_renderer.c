@@ -148,6 +148,10 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
                         _data->instance_data.extension_names[_data->instance_data.enable_extension_count++] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
                     }
 
+                    if (!strcmp(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, instance_extensions[i].extensionName)) {
+                        _data->instance_data.extension_names[_data->instance_data.enable_extension_count++] = VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME;
+                    }
+
                     if (!strcmp(VK_EXT_DEBUG_REPORT_EXTENSION_NAME, instance_extensions[i].extensionName)) {
                         _data->instance_data.extension_names[_data->instance_data.enable_extension_count++] = VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
                     }
@@ -166,18 +170,23 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
             appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
             appInfo.pEngineName = "Vk2d";
             appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-            appInfo.apiVersion = VK_API_VERSION_1_0;
+            appInfo.apiVersion = VK_API_VERSION_1_2;
 
             VkInstanceCreateInfo createInfo;
             vk2d_zero_memory(createInfo, sizeof(VkInstanceCreateInfo));
             createInfo.pNext = NULL;
             createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
             createInfo.pApplicationInfo = &appInfo;
-            
+           
+#ifdef _DEBUG
+            createInfo.enabledLayerCount = 1;
+            createInfo.ppEnabledLayerNames = (const char *const *)_data->instance_data.enabled_layers;
+#else
             createInfo.enabledLayerCount = 0; //1;
+            createInfo.ppEnabledLayerNames = NULL; //(const char *const *)_data->instance_data.enabled_layers;
+#endif
             createInfo.enabledExtensionCount = _data->instance_data.enable_extension_count;
             createInfo.ppEnabledExtensionNames = (const char *const *)_data->instance_data.extension_names;
-            createInfo.ppEnabledLayerNames = NULL; //(const char *const *)_data->instance_data.enabled_layers;
 
             res = vkCreateInstance(&createInfo, NULL, &_data->instance_data.instance);
             vk2d_assert(res == VK_SUCCESS);
@@ -423,8 +432,6 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
     return is_good;
 }
 
-
-
 void vk2d_renderer_begin_scene(vk2d_mat4 projection, vk2d_mat4 view)
 {
     batch_data->uniforms.projection = projection;
@@ -568,7 +575,7 @@ void vk2d_renderer_draw()
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	vkResetFences(_data->logical_device->device, 1, &_data->fence);
+    vkResetFences(_data->logical_device->device, 1, &_data->fence);
 
 	vk2d_assert(vkQueueSubmit(_data->logical_device->graphics_queue, 1, &submitInfo, _data->fence) == VK_SUCCESS);
 
@@ -590,6 +597,9 @@ void vk2d_renderer_draw()
 void vk2d_renderer_resize(u32 width, u32 height)
 {
     vkDeviceWaitIdle(_data->logical_device->device);
+
+    vkFreeDescriptorSets(_data->logical_device->device, batch_data->batch_descriptor_pool, 2, batch_data->batch_dsets);
+    vkDestroyDescriptorPool(_data->logical_device->device, batch_data->batch_descriptor_pool, NULL);
 
     vk2d_free_swapchain(_data->swap_chain);
     vk2d_free_command(_data->render_command);
@@ -624,6 +634,42 @@ void vk2d_renderer_resize(u32 width, u32 height)
     if (_debug_enabled)
     {
         vk2d_log_info("Vk2D Debug Messenger", "Recreated swap chain framebuffers");
+    }
+
+    // BATCH
+    {
+        VkDescriptorPoolSize sampler_size;
+        sampler_size.type = VK_DESCRIPTOR_TYPE_SAMPLER;
+        sampler_size.descriptorCount = 1 * _data->swap_chain->num_buffers;
+
+        VkDescriptorPoolSize textures_size;
+        textures_size.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        textures_size.descriptorCount = 32 * _data->swap_chain->num_buffers;
+
+        VkDescriptorPoolSize sizes[] = { sampler_size, textures_size };
+
+        VkDescriptorPoolCreateInfo poolInfo;
+        vk2d_zero_memory(poolInfo, sizeof(VkDescriptorPoolCreateInfo));
+        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        poolInfo.poolSizeCount = 2;
+        poolInfo.pPoolSizes = sizes;
+        poolInfo.maxSets = 512 * _data->swap_chain->num_buffers;
+
+        vk2d_assert(vkCreateDescriptorPool(_data->logical_device->device, &poolInfo, NULL, &batch_data->batch_descriptor_pool) == VK_SUCCESS);
+
+        VkDescriptorSetLayout layouts[2];
+        layouts[0] = batch_data->batch_dset_layout;
+        layouts[1] = batch_data->batch_dset_layout;
+
+        VkDescriptorSetAllocateInfo allocInfo;
+        vk2d_zero_memory(allocInfo, sizeof(VkDescriptorSetAllocateInfo))
+            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = batch_data->batch_descriptor_pool;
+        allocInfo.descriptorSetCount = _data->swap_chain->num_buffers;
+        allocInfo.pSetLayouts = layouts;
+
+        vk2d_assert(vkAllocateDescriptorSets(_data->logical_device->device, &allocInfo, batch_data->batch_dsets) == VK_SUCCESS);
     }
 
     // SPRITE PIPELINE
@@ -811,8 +857,8 @@ void vk2d_shutdown_renderer()
 	    vkDestroySemaphore(_data->logical_device->device, _data->image_available_semaphore, NULL);
 
         vk2d_free_pipeline(_data->sprite_pipeline);
-        vkDestroyDescriptorSetLayout(_data->logical_device->device, batch_data->batch_dset_layout, NULL);
         vkDestroyDescriptorPool(_data->logical_device->device, batch_data->batch_descriptor_pool, NULL);
+        vkDestroyDescriptorSetLayout(_data->logical_device->device, batch_data->batch_dset_layout, NULL);
         vk2d_free_renderpass(_data->sprite_renderpass);
         vk2d_free_swapchain(_data->swap_chain);
         vk2d_free_device(_data->logical_device);
