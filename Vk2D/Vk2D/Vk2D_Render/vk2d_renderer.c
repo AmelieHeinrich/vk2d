@@ -27,6 +27,8 @@ static const u32 max_indices  = max_quads * 6;
 typedef struct vk2d_batch_data vk2d_batch_data;
 struct vk2d_batch_data
 {
+    i32 firstRender;
+
     vk2d_vbuffer* quad_vertex_buffer;
     vk2d_ibuffer* quad_index_buffer;
 
@@ -394,6 +396,8 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
 
     // BATCH
     {
+        batch_data->firstRender = 1;
+
         batch_data->quad_vertex_buffer = vk2d_create_vbuffer_empty(_data->physical_device, _data->logical_device, _data->render_command, 
                                                              max_quads * sizeof(vk2d_vertex));
 
@@ -506,43 +510,48 @@ void vk2d_renderer_end_scene()
         VkDeviceSize size = { 0 };
         VkBuffer buffers[] = { batch_data->quad_vertex_buffer->buffer };
 
-        for (i32 i = 0; i < _data->swap_chain->num_buffers; i++)
+        if (batch_data->firstRender)
         {
-            VkDescriptorImageInfo descriptorImageInfos[32];
-            vk2d_zero_memory_ptr(descriptorImageInfos, sizeof(VkDescriptorImageInfo) * 32);
-    
-            for (u32 j = 0; j < batch_data->texture_slot_index; j++)
+            for (i32 i = 0; i < _data->swap_chain->num_buffers; i++)
             {
-                if (batch_data->texture_slots[j] != NULL)
+                VkDescriptorImageInfo descriptorImageInfos[32];
+                vk2d_zero_memory_ptr(descriptorImageInfos, sizeof(VkDescriptorImageInfo) * 32);
+
+                for (u32 j = 0; j < batch_data->texture_slot_index; j++)
                 {
-                    descriptorImageInfos[j].sampler = batch_data->texture_slots[0]->private_handler->texture_sampler;
-                    descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    descriptorImageInfos[j].imageView = batch_data->texture_slots[j]->private_handler->texture_image_view;
+                    if (batch_data->texture_slots[j] != NULL)
+                    {
+                        descriptorImageInfos[j].sampler = batch_data->texture_slots[0]->private_handler->texture_sampler;
+                        descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                        descriptorImageInfos[j].imageView = batch_data->texture_slots[j]->private_handler->texture_image_view;
+                    }
                 }
+
+                VkWriteDescriptorSet setWrites[2];
+                vk2d_zero_memory_ptr(setWrites, sizeof(VkWriteDescriptorSet) * 2)
+
+                    setWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                setWrites[0].dstBinding = 0;
+                setWrites[0].dstArrayElement = 0;
+                setWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+                setWrites[0].descriptorCount = 1;
+                setWrites[0].pBufferInfo = 0;
+                setWrites[0].dstSet = batch_data->batch_dsets[i];
+                setWrites[0].pImageInfo = &descriptorImageInfos[0];
+
+                setWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                setWrites[1].dstBinding = 1;
+                setWrites[1].dstArrayElement = 0;
+                setWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+                setWrites[1].descriptorCount = batch_data->texture_slot_index;
+                setWrites[1].pBufferInfo = 0;
+                setWrites[1].dstSet = batch_data->batch_dsets[i];
+                setWrites[1].pImageInfo = descriptorImageInfos;
+
+                vkUpdateDescriptorSets(_data->logical_device->device, 2, setWrites, 0, NULL);
             }
-    
-            VkWriteDescriptorSet setWrites[2];
-            vk2d_zero_memory_ptr(setWrites, sizeof(VkWriteDescriptorSet) * 2)
-    
-            setWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            setWrites[0].dstBinding = 0;
-            setWrites[0].dstArrayElement = 0;
-            setWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-            setWrites[0].descriptorCount = 1;
-            setWrites[0].pBufferInfo = 0;
-            setWrites[0].dstSet = batch_data->batch_dsets[i];
-            setWrites[0].pImageInfo = &descriptorImageInfos[0];
-    
-            setWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            setWrites[1].dstBinding = 1;
-            setWrites[1].dstArrayElement = 0;
-            setWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-            setWrites[1].descriptorCount = batch_data->texture_slot_index;
-            setWrites[1].pBufferInfo = 0;
-            setWrites[1].dstSet = batch_data->batch_dsets[i];
-            setWrites[1].pImageInfo = descriptorImageInfos;
-    
-            vkUpdateDescriptorSets(_data->logical_device->device, 2, setWrites, 0, NULL);
+
+            batch_data->firstRender = 0;
         }
 
         vkCmdBeginRenderPass(cbuf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -726,6 +735,8 @@ void vk2d_renderer_draw_textured_quad_mat4(vk2d_mat4 transform, vk2d_texture* te
 		tex_index = batch_data->texture_slot_index;
 		batch_data->texture_slots[batch_data->texture_slot_index] = texture;
 		batch_data->texture_slot_index++;
+
+        batch_data->firstRender = 1;
 	}
 
     for (size_t i = 0; i < quadVertexCount; i++)

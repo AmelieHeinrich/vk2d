@@ -43,6 +43,7 @@ void vk2d_init_device(vk2d_device* dst, vk2d_instance_data data, VkPhysicalDevic
 
     VkPhysicalDeviceFeatures features = {0};
     features.samplerAnisotropy = 1;
+    features.shaderSampledImageArrayDynamicIndexing = 1;
 
     char* extensions[] = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
