@@ -42,7 +42,18 @@ i32 vk2d_init(vk2d_init_flags flags)
         _init.everything = 1;
         result = glfwInit();
         vk2d_assert(result == GLFW_TRUE);
-        result = vk2d_audio_init();
+        vk2d_audio_init();
+
+        vk2d_audio_set_listener_position(vk2d_vec3_identity());
+        vk2d_audio_set_listener_velocity(vk2d_vec3_identity());
+        f32 forwardAndUpVectors[] = {
+			/*forward = */ 1.f, 0.f, 0.f,
+			/* up = */ 0.f, 1.f, 0.f
+		};
+        vk2d_audio_set_listener_orientation(forwardAndUpVectors);
+
+        check_al_error();
+
         return result;
     }
 

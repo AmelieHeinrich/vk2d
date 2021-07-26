@@ -27,4 +27,8 @@
 #include <Vk2D/Vk2D_Render/vk2d_texture.h>
 #include <Vk2D/Vk2D_Render/vk2d_sprite.h>
 
+// Audio
+#include <Vk2D/Vk2D_Audio/vk2d_audio.h>
+#include <Vk2D/Vk2D_Audio/vk2d_sound.h>
+
 #endif

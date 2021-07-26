@@ -16,7 +16,11 @@ int main()
     vk2d_init_renderer(window, debug);
 
     vk2d_texture* c_language = vk2d_texture_init_from_file("assets/fawful.png");
-    
+    vk2d_sound* music = vk2d_init_sound_from_file("assets/game_sound.mp3", vk2d_audio_format_mp3);
+    vk2d_update_sound_attributes(music);
+
+    vk2d_play_sound(music);
+
     int i = 0;
     while (!vk2d_window_should_close(window))
     {
@@ -45,6 +49,7 @@ int main()
         vk2d_renderer_draw();
     }
 
+    vk2d_free_sound(music);
     vk2d_texture_free(c_language);
     vk2d_shutdown_renderer();
 
