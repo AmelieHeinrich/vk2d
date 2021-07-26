@@ -42,6 +42,6 @@ struct vk2d_scene_uniforms
     vk2d_mat4 projection;
 };
 
-static vk2d_renderer_data* _data;
+extern vk2d_renderer_data* _data;
 
 #endif
