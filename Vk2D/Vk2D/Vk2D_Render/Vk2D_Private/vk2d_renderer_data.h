@@ -20,6 +20,9 @@
 typedef struct vk2d_renderer_data vk2d_renderer_data;
 struct vk2d_renderer_data
 {
+    u32 width;
+    u32 height;
+
     vk2d_instance_data instance_data;
     VkSurfaceKHR surface;
     vk2d_gpu* physical_device;

@@ -45,7 +45,8 @@ void vk2d_init_device(vk2d_device* dst, vk2d_instance_data data, VkPhysicalDevic
     features.samplerAnisotropy = 1;
 
     char* extensions[] = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
     };
 
     VkDeviceCreateInfo create_info;

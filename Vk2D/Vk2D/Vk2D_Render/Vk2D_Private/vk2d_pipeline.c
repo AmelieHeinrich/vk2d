@@ -28,7 +28,7 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, 
     VkVertexInputBindingDescription description = vk2d_get_binding_description();
     VkVertexInputAttributeDescription* descriptions = vk2d_get_attribute_descriptions();
 
-    VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+    VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo;
     vk2d_zero_memory(vertexInputInfo, sizeof(VkPipelineVertexInputStateCreateInfo));
@@ -36,7 +36,7 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, 
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.vertexAttributeDescriptionCount = 4;
     vertexInputInfo.pVertexBindingDescriptions = &description;
-	vertexInputInfo.pVertexAttributeDescriptions = descriptions;
+    vertexInputInfo.pVertexAttributeDescriptions = descriptions;
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly;
     vk2d_zero_memory(inputAssembly, sizeof(VkPipelineInputAssemblyStateCreateInfo));
@@ -63,6 +63,18 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, 
     VkRect2D scissor;
     scissor.offset = offset;
     scissor.extent = extent;
+
+    VkDynamicState states[2] =
+    {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+
+    VkPipelineDynamicStateCreateInfo dynamicState;
+    vk2d_zero_memory(dynamicState, sizeof(VkPipelineDynamicStateCreateInfo));
+    dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamicState.dynamicStateCount = 2;
+    dynamicState.pDynamicStates = states;
 
     VkPipelineViewportStateCreateInfo viewportState;
     vk2d_zero_memory(viewportState, sizeof(VkPipelineViewportStateCreateInfo));
@@ -151,6 +163,7 @@ vk2d_pipeline* vk2d_create_pipeline(vk2d_shader* shader, u32 width, u32 height, 
     pipelineInfo.renderPass = renderpass->render_pass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+    pipelineInfo.pDynamicState = &dynamicState;
 
     {
         VkResult res = vkCreateGraphicsPipelines(device, NULL, 1, &pipelineInfo, NULL, &result->pipeline);

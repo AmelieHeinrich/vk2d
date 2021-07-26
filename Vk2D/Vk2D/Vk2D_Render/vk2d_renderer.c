@@ -101,8 +101,8 @@ void init_batch_dset()
     layouts[1] = batch_data->batch_dset_layout;
 
     VkDescriptorSetAllocateInfo allocInfo;
-    vk2d_zero_memory(allocInfo, sizeof(VkDescriptorSetAllocateInfo))
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    vk2d_zero_memory(allocInfo, sizeof(VkDescriptorSetAllocateInfo));
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = batch_data->batch_descriptor_pool;
     allocInfo.descriptorSetCount = _data->swap_chain->num_buffers;
     allocInfo.pSetLayouts = layouts;
@@ -117,6 +117,9 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
 
     vk2d_new(_data, sizeof(vk2d_renderer_data));
     vk2d_new(batch_data, sizeof(vk2d_batch_data));
+
+    _data->width = window->width;
+    _data->height = window->height;
 
     // CORE
     {
@@ -547,6 +550,22 @@ void vk2d_renderer_end_scene()
         vkCmdBindVertexBuffers(cbuf, 0, 1, buffers, &size);
         vkCmdBindIndexBuffer(cbuf, batch_data->quad_index_buffer->buffer, 0, VK_INDEX_TYPE_UINT32);
         vkCmdBindDescriptorSets(cbuf, VK_PIPELINE_BIND_POINT_GRAPHICS, _data->sprite_pipeline->pipeline_layout, 0, 1, &batch_data->batch_dsets[i], 0, NULL);
+        
+        VkViewport viewport;
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = (float)_data->width;
+        viewport.height = (float)_data->height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+
+        VkRect2D scissor;
+        scissor.offset.x = 0;
+        scissor.offset.y = 0;
+        scissor.extent = _data->swap_chain->swap_chain_extent;
+
+        vkCmdSetViewport(cbuf, 0, 1, &viewport);
+        vkCmdSetScissor(cbuf, 0, 1, &scissor);
 
         vk2d_scene_uniforms uniforms = {0};
         uniforms.projection = batch_data->uniforms.projection;
@@ -601,15 +620,12 @@ void vk2d_renderer_draw()
 
 void vk2d_renderer_resize(u32 width, u32 height)
 {
+    _data->width = width;
+    _data->height = height;
+
     vkDeviceWaitIdle(_data->logical_device->device);
 
-    vkFreeDescriptorSets(_data->logical_device->device, batch_data->batch_descriptor_pool, 2, batch_data->batch_dsets);
-    vkDestroyDescriptorPool(_data->logical_device->device, batch_data->batch_descriptor_pool, NULL);
-
     vk2d_free_swapchain(_data->swap_chain);
-    vk2d_free_command(_data->render_command);
-    vk2d_free_pipeline(_data->sprite_pipeline);
-    vk2d_free_renderpass(_data->sprite_renderpass);
     
     // SWAPCHAIN
     {
@@ -621,16 +637,6 @@ void vk2d_renderer_resize(u32 width, u32 height)
         vk2d_log_info("Vk2D Debug Messenger", "Recreated swap chain with 2 buffers");
     }
 
-    // SPRITE RENDERPASS
-    {
-        _data->sprite_renderpass = vk2d_create_renderpass("Sprite Render Pass", _data->swap_chain->swap_chain_image_format);
-    }
-
-    if (_debug_enabled)
-    {
-        vk2d_log_info("Vk2D Debug Messenger", "Recreated sprite render pass");
-    }
-
     // FRAMEBUFFERS
     {
         vk2d_construct_framebuffers(_data->swap_chain, _data->sprite_renderpass);
@@ -639,28 +645,6 @@ void vk2d_renderer_resize(u32 width, u32 height)
     if (_debug_enabled)
     {
         vk2d_log_info("Vk2D Debug Messenger", "Recreated swap chain framebuffers");
-    }
-
-    // BATCH
-    {
-        init_batch_dset();
-    }
-
-    // SPRITE PIPELINE
-    {
-        vk2d_shader* shader = vk2d_create_shader("vk2d_shaders/vertex.spv", "vk2d_shaders/fragment.spv");
-        _data->sprite_pipeline = vk2d_create_pipeline(shader, width, height, _data->sprite_renderpass, batch_data->batch_dset_layout);
-        vk2d_free_shader(shader);
-    }
-
-    if (_debug_enabled)
-    {
-        vk2d_log_info("Vk2D Debug Messenger", "Recreated sprite graphics pipeline");
-    }
-
-    // RENDER COMMAND
-    {
-        _data->render_command = vk2d_create_command(_data->physical_device);
     }
 }
 
