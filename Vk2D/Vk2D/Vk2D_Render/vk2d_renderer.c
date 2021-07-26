@@ -46,7 +46,7 @@ struct vk2d_batch_data
 
     vk2d_texture* white_texture;
 
-    vk2d_texture* texture_slots[32];
+    vk2d_texture** texture_slots;
     u32 texture_slot_index;
     i32 max_slots;
 
@@ -396,6 +396,9 @@ i32 vk2d_init_renderer(vk2d_window* window, i32 enableDebug)
 
     // BATCH
     {
+        vk2d_new(batch_data->texture_slots, sizeof(vk2d_texture) * 32);
+        vk2d_zero_memory_ptr(batch_data->texture_slots, sizeof(vk2d_texture) * 32);
+
         batch_data->firstRender = 1;
 
         batch_data->quad_vertex_buffer = vk2d_create_vbuffer_empty(_data->physical_device, _data->logical_device, _data->render_command, 
@@ -517,7 +520,7 @@ void vk2d_renderer_end_scene()
                 VkDescriptorImageInfo descriptorImageInfos[32];
                 vk2d_zero_memory_ptr(descriptorImageInfos, sizeof(VkDescriptorImageInfo) * 32);
 
-                for (u32 j = 0; j < batch_data->texture_slot_index; j++)
+                for (u32 j = 0; j < 32; j++)
                 {
                     if (batch_data->texture_slots[j] != NULL)
                     {
@@ -525,12 +528,18 @@ void vk2d_renderer_end_scene()
                         descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                         descriptorImageInfos[j].imageView = batch_data->texture_slots[j]->private_handler->texture_image_view;
                     }
+                    else
+                    {
+                        descriptorImageInfos[j].sampler = batch_data->texture_slots[0]->private_handler->texture_sampler;
+                        descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                        descriptorImageInfos[j].imageView = batch_data->texture_slots[0]->private_handler->texture_image_view;
+                    }
                 }
 
                 VkWriteDescriptorSet setWrites[2];
-                vk2d_zero_memory_ptr(setWrites, sizeof(VkWriteDescriptorSet) * 2)
+                vk2d_zero_memory_ptr(setWrites, sizeof(VkWriteDescriptorSet) * 2);
 
-                    setWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                setWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 setWrites[0].dstBinding = 0;
                 setWrites[0].dstArrayElement = 0;
                 setWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
@@ -543,7 +552,7 @@ void vk2d_renderer_end_scene()
                 setWrites[1].dstBinding = 1;
                 setWrites[1].dstArrayElement = 0;
                 setWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-                setWrites[1].descriptorCount = batch_data->texture_slot_index;
+                setWrites[1].descriptorCount = 32;
                 setWrites[1].pBufferInfo = 0;
                 setWrites[1].dstSet = batch_data->batch_dsets[i];
                 setWrites[1].pImageInfo = descriptorImageInfos;
@@ -810,6 +819,7 @@ void vk2d_shutdown_renderer()
     // BATCH
     {
         vk2d_texture_free(batch_data->white_texture);
+        vk2d_free(batch_data->texture_slots);
 
         vk2d_free_vbuffer(batch_data->quad_vertex_buffer);
         vk2d_free_ibuffer(batch_data->quad_index_buffer);
