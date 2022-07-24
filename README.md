@@ -11,12 +11,6 @@
 - Event system  
 - Logger 
 
-## Current state
-
-This project has now been left behind in favor of Kuze, a Vulkan game engine I am writing (https://github.com/Sausty/Kuze)
-
-I will eventually make updates and/or review any contributions
-
 ## How to build
 
 ```batch
